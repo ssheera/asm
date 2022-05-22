@@ -116,7 +116,7 @@ public abstract class AbstractInsnNode {
    * correct only when {@link InsnList#cache} is not null. A value of -1 indicates that this
    * instruction does not belong to any {@link InsnList}.
    */
-  int index;
+  public int index;
 
   /**
    * Constructs a new {@link AbstractInsnNode}.

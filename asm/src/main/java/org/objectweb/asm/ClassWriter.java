@@ -27,6 +27,8 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 package org.objectweb.asm;
 
+import java.util.LinkedList;
+
 /**
  * A {@link ClassVisitor} that generates a corresponding ClassFile structure, as defined in the Java
  * Virtual Machine Specification (JVMS). It can be used alone, to generate a Java class "from
@@ -81,7 +83,7 @@ public class ClassWriter extends ClassVisitor {
   private int version;
 
   /** The symbol table for this class (contains the constant_pool and the BootstrapMethods). */
-  private final SymbolTable symbolTable;
+  public SymbolTable symbolTable;
 
   /**
    * The access_flags field of the JVMS ClassFile structure. This field can contain ASM specific
@@ -119,6 +121,8 @@ public class ClassWriter extends ClassVisitor {
    * {@link MethodWriter#mv} field. This field stores the first element of this list.
    */
   private MethodWriter firstMethod;
+
+  public LinkedList<MethodWriter> cachedMethods = new LinkedList<MethodWriter>();
 
   /**
    * The methods of this class, stored in a linked list of {@link MethodWriter} linked via their
@@ -220,6 +224,10 @@ public class ClassWriter extends ClassVisitor {
    * MethodWriter#COMPUTE_INSERTED_FRAMES}, or {@link MethodWriter#COMPUTE_ALL_FRAMES}.
    */
   private int compute;
+  public int offsetMethodEnd, offsetMethodStart;
+  public int offsetCPEnd, offsetCPStart;
+
+  public boolean onlyCode;
 
   // -----------------------------------------------------------------------------------------------
   // Constructor
@@ -271,7 +279,6 @@ public class ClassWriter extends ClassVisitor {
       compute = MethodWriter.COMPUTE_NOTHING;
     }
   }
-
   // -----------------------------------------------------------------------------------------------
   // Accessors
   // -----------------------------------------------------------------------------------------------
@@ -509,6 +516,7 @@ public class ClassWriter extends ClassVisitor {
     while (methodWriter != null) {
       ++methodsCount;
       size += methodWriter.computeMethodInfoSize();
+      cachedMethods.add(methodWriter);
       methodWriter = (MethodWriter) methodWriter.mv;
     }
 
@@ -625,7 +633,13 @@ public class ClassWriter extends ClassVisitor {
     // dynamic resizes) and fill it with the ClassFile content.
     ByteVector result = new ByteVector(size);
     result.putInt(0xCAFEBABE).putInt(version);
+
+    offsetCPStart = result.length;
+
     symbolTable.putConstantPool(result);
+
+    offsetCPEnd = result.length;
+
     int mask = (version & 0xFFFF) < Opcodes.V1_5 ? Opcodes.ACC_SYNTHETIC : 0;
     result.putShort(accessFlags & ~mask).putShort(thisClass).putShort(superClass);
     result.putShort(interfaceCount);
@@ -638,7 +652,11 @@ public class ClassWriter extends ClassVisitor {
       fieldWriter.putFieldInfo(result);
       fieldWriter = (FieldWriter) fieldWriter.fv;
     }
+
+    offsetMethodStart = result.length;
+
     result.putShort(methodsCount);
+
     boolean hasFrames = false;
     boolean hasAsmInstructions = false;
     methodWriter = firstMethod;
@@ -648,6 +666,9 @@ public class ClassWriter extends ClassVisitor {
       methodWriter.putMethodInfo(result);
       methodWriter = (MethodWriter) methodWriter.mv;
     }
+
+    offsetMethodEnd = result.length;
+
     // For ease of reference, we use here the same attribute order as in Section 4.7 of the JVMS.
     result.putShort(attributesCount);
     if (innerClasses != null) {

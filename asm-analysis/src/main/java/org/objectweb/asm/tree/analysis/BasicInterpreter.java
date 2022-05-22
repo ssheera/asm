@@ -99,7 +99,7 @@ public class BasicInterpreter extends Interpreter<BasicValue> implements Opcodes
         return BasicValue.DOUBLE_VALUE;
       case Type.ARRAY:
       case Type.OBJECT:
-        return BasicValue.REFERENCE_VALUE;
+        return new BasicValue(type);
       default:
         throw new AssertionError();
     }

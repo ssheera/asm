@@ -36,10 +36,10 @@ package org.objectweb.asm;
 public class ByteVector {
 
   /** The content of this vector. Only the first {@link #length} bytes contain real data. */
-  byte[] data;
+  public byte[] data;
 
   /** The actual number of bytes in this vector. */
-  int length;
+  public int length;
 
   /** Constructs a new {@link ByteVector} with a default initial capacity. */
   public ByteVector() {

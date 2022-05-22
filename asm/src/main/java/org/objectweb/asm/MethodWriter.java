@@ -36,7 +36,7 @@ package org.objectweb.asm;
  * @author Eric Bruneton
  * @author Eugene Kuleshov
  */
-final class MethodWriter extends MethodVisitor {
+public class MethodWriter extends MethodVisitor {
 
   /** Indicates that nothing must be computed. */
   static final int COMPUTE_NOTHING = 0;
@@ -284,7 +284,7 @@ final class MethodWriter extends MethodVisitor {
   };
 
   /** Where the constants used in this MethodWriter must be stored. */
-  private final SymbolTable symbolTable;
+  public final SymbolTable symbolTable;
 
   // Note: fields are ordered as in the method_info structure, and those related to attributes are
   // ordered as in Section 4.7 of the JVMS.
@@ -294,19 +294,19 @@ final class MethodWriter extends MethodVisitor {
    * access flags, such as {@link Opcodes#ACC_DEPRECATED}, which are removed when generating the
    * ClassFile structure.
    */
-  private final int accessFlags;
+  public final int accessFlags;
 
   /** The name_index field of the method_info JVMS structure. */
   private final int nameIndex;
 
   /** The name of this method. */
-  private final String name;
+  public final String name;
 
   /** The descriptor_index field of the method_info JVMS structure. */
   private final int descriptorIndex;
 
   /** The descriptor of this method. */
-  private final String descriptor;
+  public final String descriptor;
 
   // Code attribute fields and sub attributes:
 
@@ -317,7 +317,7 @@ final class MethodWriter extends MethodVisitor {
   private int maxLocals;
 
   /** The 'code' field of the Code attribute. */
-  private final ByteVector code = new ByteVector();
+  public final ByteVector code = new ByteVector();
 
   /**
    * The first element in the exception handler list (used to generate the exception_table of the
@@ -585,7 +585,7 @@ final class MethodWriter extends MethodVisitor {
    * @param exceptions the internal names of the method's exceptions. May be {@literal null}.
    * @param compute indicates what must be computed (see #compute).
    */
-  MethodWriter(
+  public MethodWriter(
       final SymbolTable symbolTable,
       final int access,
       final String name,
@@ -2012,7 +2012,7 @@ final class MethodWriter extends MethodVisitor {
    *     method_info JVMS structure in 'source.b', between 'methodInfoOffset' and 'methodInfoOffset'
    *     + 'methodInfoLength'.
    */
-  boolean canCopyMethodAttributes(
+  public boolean canCopyMethodAttributes(
       final ClassReader source,
       final boolean hasSyntheticAttribute,
       final boolean hasDeprecatedAttribute,
@@ -2059,7 +2059,7 @@ final class MethodWriter extends MethodVisitor {
    * @param methodInfoLength the length in 'symbolTable.getSource()' of the method_info JVMS
    *     structure from which the attributes of this method will be copied.
    */
-  void setMethodAttributesSource(final int methodInfoOffset, final int methodInfoLength) {
+  public void setMethodAttributesSource(final int methodInfoOffset, final int methodInfoLength) {
     // Don't copy the attributes yet, instead store their location in the source class reader so
     // they can be copied later, in {@link #putMethodInfo}. Note that we skip the 6 header bytes
     // of the method_info JVMS structure.
@@ -2073,7 +2073,7 @@ final class MethodWriter extends MethodVisitor {
    *
    * @return the size in bytes of the method_info JVMS structure.
    */
-  int computeMethodInfoSize() {
+  public int computeMethodInfoSize() {
     // If this method_info must be copied from an existing one, the size computation is trivial.
     if (sourceOffset != 0) {
       // sourceLength excludes the first 6 bytes for access_flags, name_index and descriptor_index.
