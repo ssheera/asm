@@ -284,7 +284,7 @@ public class MethodWriter extends MethodVisitor {
   };
 
   /** Where the constants used in this MethodWriter must be stored. */
-  public final SymbolTable symbolTable;
+  public SymbolTable symbolTable;
 
   // Note: fields are ordered as in the method_info structure, and those related to attributes are
   // ordered as in Section 4.7 of the JVMS.
@@ -294,19 +294,19 @@ public class MethodWriter extends MethodVisitor {
    * access flags, such as {@link Opcodes#ACC_DEPRECATED}, which are removed when generating the
    * ClassFile structure.
    */
-  public final int accessFlags;
+  public int accessFlags;
 
   /** The name_index field of the method_info JVMS structure. */
-  private final int nameIndex;
+  private int nameIndex;
 
   /** The name of this method. */
-  public final String name;
+  public String name;
 
   /** The descriptor_index field of the method_info JVMS structure. */
-  private final int descriptorIndex;
+  private int descriptorIndex;
 
   /** The descriptor of this method. */
-  public final String descriptor;
+  public String descriptor;
 
   // Code attribute fields and sub attributes:
 
@@ -317,7 +317,7 @@ public class MethodWriter extends MethodVisitor {
   private int maxLocals;
 
   /** The 'code' field of the Code attribute. */
-  public final ByteVector code = new ByteVector();
+  public ByteVector code = new ByteVector();
 
   /**
    * The first element in the exception handler list (used to generate the exception_table of the
@@ -388,13 +388,13 @@ public class MethodWriter extends MethodVisitor {
   // Other method_info attributes:
 
   /** The number_of_exceptions field of the Exceptions attribute. */
-  private final int numberOfExceptions;
+  public int numberOfExceptions;
 
   /** The exception_index_table array of the Exceptions attribute, or {@literal null}. */
-  private final int[] exceptionIndexTable;
+  public int[] exceptionIndexTable;
 
   /** The signature_index field of the Signature attribute. */
-  private final int signatureIndex;
+  public int signatureIndex;
 
   /**
    * The last runtime visible annotation of this method. The previous ones can be accessed with the
@@ -469,7 +469,7 @@ public class MethodWriter extends MethodVisitor {
    * #COMPUTE_INSERTED_FRAMES}, {@link COMPUTE_MAX_STACK_AND_LOCAL_FROM_FRAMES}, {@link
    * #COMPUTE_MAX_STACK_AND_LOCAL} or {@link #COMPUTE_NOTHING}.
    */
-  private final int compute;
+  public int compute;
 
   /**
    * The first basic block of the method. The next ones (in bytecode offset order) can be accessed
@@ -585,6 +585,17 @@ public class MethodWriter extends MethodVisitor {
    * @param exceptions the internal names of the method's exceptions. May be {@literal null}.
    * @param compute indicates what must be computed (see #compute).
    */
+
+  public MethodWriter(
+          final SymbolTable symbolTable,
+          final int access,
+          final String name,
+          final String descriptor,
+          final String signature,
+          final String[] exceptions) {
+    super(Opcodes.ASM9);
+  }
+
   public MethodWriter(
       final SymbolTable symbolTable,
       final int access,
@@ -1275,6 +1286,9 @@ public class MethodWriter extends MethodVisitor {
 
   @Override
   public void visitLdcInsn(final Object value) {
+    // 230 = fast_aldc
+    // 231 = fast_aldc_w
+
     lastBytecodeOffset = code.length;
     // Add the instruction to the bytecode of the method.
     Symbol constantSymbol = symbolTable.addConstant(value);
@@ -1286,6 +1300,12 @@ public class MethodWriter extends MethodVisitor {
             || (constantSymbol.tag == Symbol.CONSTANT_DYNAMIC_TAG
                 && ((firstDescriptorChar = constantSymbol.value.charAt(0)) == 'J'
                     || firstDescriptorChar == 'D'));
+
+    boolean fast = constantSymbol.tag == Symbol.CONSTANT_METHOD_HANDLE_TAG ||
+        constantSymbol.tag == Symbol.CONSTANT_METHOD_TYPE_TAG ||
+            constantSymbol.tag == Symbol.CONSTANT_STRING_TAG ||
+            constantSymbol.tag == Symbol.CONSTANT_DYNAMIC_TAG;
+
     if (isLongOrDouble) {
       code.put12(Constants.LDC2_W, constantIndex);
     } else if (constantIndex >= 256) {
@@ -1293,6 +1313,7 @@ public class MethodWriter extends MethodVisitor {
     } else {
       code.put11(Opcodes.LDC, constantIndex);
     }
+
     // If needed, update the maximum stack size and number of locals, and stack map frames.
     if (currentBasicBlock != null) {
       if (compute == COMPUTE_ALL_FRAMES || compute == COMPUTE_INSERTED_FRAMES) {
@@ -2178,7 +2199,7 @@ public class MethodWriter extends MethodVisitor {
    *
    * @param output where the method_info structure must be put.
    */
-  void putMethodInfo(final ByteVector output) {
+  public void putMethodInfo(final ByteVector output) {
     boolean useSyntheticAttribute = symbolTable.getMajorVersion() < Opcodes.V1_5;
     int mask = useSyntheticAttribute ? Opcodes.ACC_SYNTHETIC : 0;
     output.putShort(accessFlags & ~mask).putShort(nameIndex).putShort(descriptorIndex);

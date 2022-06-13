@@ -34,9 +34,9 @@ package org.objectweb.asm;
  *
  * @author Eric Bruneton
  */
-final class CurrentFrame extends Frame {
+public final class CurrentFrame extends Frame {
 
-  CurrentFrame(final Label owner) {
+  public CurrentFrame(final Label owner) {
     super(owner);
   }
 
@@ -46,8 +46,8 @@ final class CurrentFrame extends Frame {
    * method is called is the stack map frame status just before the given instruction is executed.
    */
   @Override
-  void execute(
-      final int opcode, final int arg, final Symbol symbolArg, final SymbolTable symbolTable) {
+  public void execute(
+          final int opcode, final int arg, final Symbol symbolArg, final SymbolTable symbolTable) {
     super.execute(opcode, arg, symbolArg, symbolTable);
     Frame successor = new Frame(null);
     merge(symbolTable, successor, 0);

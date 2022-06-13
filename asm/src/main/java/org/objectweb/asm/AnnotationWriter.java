@@ -41,7 +41,7 @@ package org.objectweb.asm;
  * @author Eric Bruneton
  * @author Eugene Kuleshov
  */
-final class AnnotationWriter extends AnnotationVisitor {
+public final class AnnotationWriter extends AnnotationVisitor {
 
   /** Where the constants used in this AnnotationWriter must be stored. */
   private final SymbolTable symbolTable;
@@ -107,11 +107,11 @@ final class AnnotationWriter extends AnnotationVisitor {
    *     Runtime[In]Visible[Type]Annotations attribute to which this annotation belongs, or
    *     {@literal null} in other cases (e.g. nested or array annotations).
    */
-  AnnotationWriter(
-      final SymbolTable symbolTable,
-      final boolean useNamedValues,
-      final ByteVector annotation,
-      final AnnotationWriter previousAnnotation) {
+  public AnnotationWriter(
+          final SymbolTable symbolTable,
+          final boolean useNamedValues,
+          final ByteVector annotation,
+          final AnnotationWriter previousAnnotation) {
     super(/* latest api = */ Opcodes.ASM9);
     this.symbolTable = symbolTable;
     this.useNamedValues = useNamedValues;
@@ -134,10 +134,10 @@ final class AnnotationWriter extends AnnotationVisitor {
    *     {@literal null} in other cases (e.g. nested or array annotations).
    * @return a new {@link AnnotationWriter} for the given annotation descriptor.
    */
-  static AnnotationWriter create(
-      final SymbolTable symbolTable,
-      final String descriptor,
-      final AnnotationWriter previousAnnotation) {
+  public static AnnotationWriter create(
+          final SymbolTable symbolTable,
+          final String descriptor,
+          final AnnotationWriter previousAnnotation) {
     // Create a ByteVector to hold an 'annotation' JVMS structure.
     // See https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7.16.
     ByteVector annotation = new ByteVector();
@@ -164,12 +164,12 @@ final class AnnotationWriter extends AnnotationVisitor {
    *     {@literal null} in other cases (e.g. nested or array annotations).
    * @return a new {@link AnnotationWriter} for the given type annotation reference and descriptor.
    */
-  static AnnotationWriter create(
-      final SymbolTable symbolTable,
-      final int typeRef,
-      final TypePath typePath,
-      final String descriptor,
-      final AnnotationWriter previousAnnotation) {
+  public static AnnotationWriter create(
+          final SymbolTable symbolTable,
+          final int typeRef,
+          final TypePath typePath,
+          final String descriptor,
+          final AnnotationWriter previousAnnotation) {
     // Create a ByteVector to hold a 'type_annotation' JVMS structure.
     // See https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7.20.
     ByteVector typeAnnotation = new ByteVector();
@@ -329,7 +329,7 @@ final class AnnotationWriter extends AnnotationVisitor {
    *     annotation and all its predecessors. This includes the size of the attribute_name_index and
    *     attribute_length fields.
    */
-  int computeAnnotationsSize(final String attributeName) {
+  public int computeAnnotationsSize(final String attributeName) {
     if (attributeName != null) {
       symbolTable.addConstantUtf8(attributeName);
     }
@@ -364,11 +364,11 @@ final class AnnotationWriter extends AnnotationVisitor {
    *     given annotations and all their predecessors. This includes the size of the
    *     attribute_name_index and attribute_length fields.
    */
-  static int computeAnnotationsSize(
-      final AnnotationWriter lastRuntimeVisibleAnnotation,
-      final AnnotationWriter lastRuntimeInvisibleAnnotation,
-      final AnnotationWriter lastRuntimeVisibleTypeAnnotation,
-      final AnnotationWriter lastRuntimeInvisibleTypeAnnotation) {
+  public static int computeAnnotationsSize(
+          final AnnotationWriter lastRuntimeVisibleAnnotation,
+          final AnnotationWriter lastRuntimeInvisibleAnnotation,
+          final AnnotationWriter lastRuntimeVisibleTypeAnnotation,
+          final AnnotationWriter lastRuntimeInvisibleTypeAnnotation) {
     int size = 0;
     if (lastRuntimeVisibleAnnotation != null) {
       size +=
@@ -402,7 +402,7 @@ final class AnnotationWriter extends AnnotationVisitor {
    *     "Runtime[In]Visible[Type]Annotations").
    * @param output where the attribute must be put.
    */
-  void putAnnotations(final int attributeNameIndex, final ByteVector output) {
+  public void putAnnotations(final int attributeNameIndex, final ByteVector output) {
     int attributeLength = 2; // For num_annotations.
     int numAnnotations = 0;
     AnnotationWriter annotationWriter = this;
@@ -445,13 +445,13 @@ final class AnnotationWriter extends AnnotationVisitor {
    *     #previousAnnotation} field. May be {@literal null}.
    * @param output where the attributes must be put.
    */
-  static void putAnnotations(
-      final SymbolTable symbolTable,
-      final AnnotationWriter lastRuntimeVisibleAnnotation,
-      final AnnotationWriter lastRuntimeInvisibleAnnotation,
-      final AnnotationWriter lastRuntimeVisibleTypeAnnotation,
-      final AnnotationWriter lastRuntimeInvisibleTypeAnnotation,
-      final ByteVector output) {
+  public static void putAnnotations(
+          final SymbolTable symbolTable,
+          final AnnotationWriter lastRuntimeVisibleAnnotation,
+          final AnnotationWriter lastRuntimeInvisibleAnnotation,
+          final AnnotationWriter lastRuntimeVisibleTypeAnnotation,
+          final AnnotationWriter lastRuntimeInvisibleTypeAnnotation,
+          final ByteVector output) {
     if (lastRuntimeVisibleAnnotation != null) {
       lastRuntimeVisibleAnnotation.putAnnotations(
           symbolTable.addConstantUtf8(Constants.RUNTIME_VISIBLE_ANNOTATIONS), output);
@@ -484,10 +484,10 @@ final class AnnotationWriter extends AnnotationVisitor {
    *     to the given sub-array of AnnotationWriter lists. This includes the size of the
    *     attribute_name_index and attribute_length fields.
    */
-  static int computeParameterAnnotationsSize(
-      final String attributeName,
-      final AnnotationWriter[] annotationWriters,
-      final int annotableParameterCount) {
+  public static int computeParameterAnnotationsSize(
+          final String attributeName,
+          final AnnotationWriter[] annotationWriters,
+          final int annotableParameterCount) {
     // Note: attributeName is added to the constant pool by the call to computeAnnotationsSize
     // below. This assumes that there is at least one non-null element in the annotationWriters
     // sub-array (which is ensured by the lazy instantiation of this array in MethodWriter).
@@ -514,11 +514,11 @@ final class AnnotationWriter extends AnnotationVisitor {
    *     [0..annotableParameterCount[ are put).
    * @param output where the attribute must be put.
    */
-  static void putParameterAnnotations(
-      final int attributeNameIndex,
-      final AnnotationWriter[] annotationWriters,
-      final int annotableParameterCount,
-      final ByteVector output) {
+  public static void putParameterAnnotations(
+          final int attributeNameIndex,
+          final AnnotationWriter[] annotationWriters,
+          final int annotableParameterCount,
+          final ByteVector output) {
     // The num_parameters field uses 1 byte, and each element of the parameter_annotations array
     // uses 2 bytes for its num_annotations field.
     int attributeLength = 1 + 2 * annotableParameterCount;

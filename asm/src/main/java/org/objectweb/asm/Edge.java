@@ -37,19 +37,19 @@ package org.objectweb.asm;
  * @see Label
  * @author Eric Bruneton
  */
-final class Edge {
+public final class Edge {
 
   /**
    * A control flow graph edge corresponding to a jump or ret instruction. Only used with {@link
    * ClassWriter#COMPUTE_FRAMES}.
    */
-  static final int JUMP = 0;
+  public static final int JUMP = 0;
 
   /**
    * A control flow graph edge corresponding to an exception handler. Only used with {@link
    * ClassWriter#COMPUTE_MAXS}.
    */
-  static final int EXCEPTION = 0x7FFFFFFF;
+  public static final int EXCEPTION = 0x7FFFFFFF;
 
   /**
    * Information about this control flow graph edge.
@@ -66,15 +66,15 @@ final class Edge {
    *       to an exception handler).
    * </ul>
    */
-  final int info;
+  public final int info;
 
   /** The successor block of this control flow graph edge. */
-  final Label successor;
+  public final Label successor;
 
   /**
    * The next edge in the list of outgoing edges of a basic block. See {@link Label#outgoingEdges}.
    */
-  Edge nextEdge;
+  public Edge nextEdge;
 
   /**
    * Constructs a new Edge.
@@ -83,7 +83,7 @@ final class Edge {
    * @param successor see {@link #successor}.
    * @param nextEdge see {@link #nextEdge}.
    */
-  Edge(final int info, final Label successor, final Edge nextEdge) {
+  public Edge(final int info, final Label successor, final Edge nextEdge) {
     this.info = info;
     this.successor = successor;
     this.nextEdge = nextEdge;

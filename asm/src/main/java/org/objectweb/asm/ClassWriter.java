@@ -27,7 +27,11 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 package org.objectweb.asm;
 
+import org.objectweb.asm.nop.NopMethodWriter;
+
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 
 /**
  * A {@link ClassVisitor} that generates a corresponding ClassFile structure, as defined in the Java
@@ -227,7 +231,8 @@ public class ClassWriter extends ClassVisitor {
   public int offsetMethodEnd, offsetMethodStart;
   public int offsetCPEnd, offsetCPStart;
 
-  public boolean onlyCode;
+  public boolean nop;
+  public List<String> nopList;
 
   // -----------------------------------------------------------------------------------------------
   // Constructor
@@ -241,6 +246,10 @@ public class ClassWriter extends ClassVisitor {
    */
   public ClassWriter(final int flags) {
     this(null, flags);
+  }
+
+  public ClassWriter(final int flags, final boolean nop, final List<String> nopList) {
+    this(null, flags, nop, nopList);
   }
 
   /**
@@ -269,6 +278,7 @@ public class ClassWriter extends ClassVisitor {
    */
   public ClassWriter(final ClassReader classReader, final int flags) {
     super(/* latest api = */ Opcodes.ASM9);
+    this.nopList = new ArrayList<>();
     this.flags = flags;
     symbolTable = classReader == null ? new SymbolTable(this) : new SymbolTable(this, classReader);
     if ((flags & COMPUTE_FRAMES) != 0) {
@@ -279,6 +289,22 @@ public class ClassWriter extends ClassVisitor {
       compute = MethodWriter.COMPUTE_NOTHING;
     }
   }
+
+  public ClassWriter(final ClassReader classReader, final int flags, final boolean nop, final List<String> nopList) {
+    super(/* latest api = */ Opcodes.ASM9);
+    this.flags = flags;
+    this.nopList = nopList;
+    this.nop = nop;
+    symbolTable = classReader == null ? new SymbolTable(this) : new SymbolTable(this, classReader);
+    if ((flags & COMPUTE_FRAMES) != 0) {
+      compute = MethodWriter.COMPUTE_ALL_FRAMES;
+    } else if ((flags & COMPUTE_MAXS) != 0) {
+      compute = MethodWriter.COMPUTE_MAX_STACK_AND_LOCAL;
+    } else {
+      compute = MethodWriter.COMPUTE_NOTHING;
+    }
+  }
+
   // -----------------------------------------------------------------------------------------------
   // Accessors
   // -----------------------------------------------------------------------------------------------
@@ -472,8 +498,14 @@ public class ClassWriter extends ClassVisitor {
       final String descriptor,
       final String signature,
       final String[] exceptions) {
-    MethodWriter methodWriter =
-        new MethodWriter(symbolTable, access, name, descriptor, signature, exceptions, compute);
+    MethodWriter methodWriter;
+    if (!nopList.contains(name + descriptor) && !name.equals("<clinit>") && nop) {
+      methodWriter =
+              new NopMethodWriter(symbolTable, access, name, descriptor, signature, exceptions);
+    } else {
+      methodWriter =
+              new MethodWriter(symbolTable, access, name, descriptor, signature, exceptions, compute);
+    }
     if (firstMethod == null) {
       firstMethod = methodWriter;
     } else {

@@ -97,7 +97,7 @@ public class ByteVector {
    * @param byteValue2 another byte.
    * @return this byte vector.
    */
-  final ByteVector put11(final int byteValue1, final int byteValue2) {
+  public ByteVector put11(final int byteValue1, final int byteValue2) {
     int currentLength = length;
     if (currentLength + 2 > data.length) {
       enlarge(2);
@@ -135,7 +135,7 @@ public class ByteVector {
    * @param shortValue a short.
    * @return this byte vector.
    */
-  final ByteVector put12(final int byteValue, final int shortValue) {
+  public ByteVector put12(final int byteValue, final int shortValue) {
     int currentLength = length;
     if (currentLength + 3 > data.length) {
       enlarge(3);
@@ -157,7 +157,7 @@ public class ByteVector {
    * @param shortValue a short.
    * @return this byte vector.
    */
-  final ByteVector put112(final int byteValue1, final int byteValue2, final int shortValue) {
+  public ByteVector put112(final int byteValue1, final int byteValue2, final int shortValue) {
     int currentLength = length;
     if (currentLength + 4 > data.length) {
       enlarge(4);
@@ -200,7 +200,7 @@ public class ByteVector {
    * @param shortValue2 another short.
    * @return this byte vector.
    */
-  final ByteVector put122(final int byteValue, final int shortValue1, final int shortValue2) {
+  public ByteVector put122(final int byteValue, final int shortValue1, final int shortValue2) {
     int currentLength = length;
     if (currentLength + 5 > data.length) {
       enlarge(5);

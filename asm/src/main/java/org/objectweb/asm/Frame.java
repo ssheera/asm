@@ -27,6 +27,8 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 package org.objectweb.asm;
 
+import org.objectweb.asm.nop.NopMethodWriter;
+
 /**
  * The input and output stack map frames of a basic block.
  *
@@ -100,19 +102,19 @@ package org.objectweb.asm;
  *
  * @author Eric Bruneton
  */
-class Frame {
+public class Frame {
 
   // Constants used in the StackMapTable attribute.
   // See https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7.4.
 
-  static final int SAME_FRAME = 0;
-  static final int SAME_LOCALS_1_STACK_ITEM_FRAME = 64;
+  public static final int SAME_FRAME = 0;
+  public static final int SAME_LOCALS_1_STACK_ITEM_FRAME = 64;
   static final int RESERVED = 128;
-  static final int SAME_LOCALS_1_STACK_ITEM_FRAME_EXTENDED = 247;
-  static final int CHOP_FRAME = 248;
-  static final int SAME_FRAME_EXTENDED = 251;
-  static final int APPEND_FRAME = 252;
-  static final int FULL_FRAME = 255;
+  public static final int SAME_LOCALS_1_STACK_ITEM_FRAME_EXTENDED = 247;
+  public static final int CHOP_FRAME = 248;
+  public static final int SAME_FRAME_EXTENDED = 251;
+  public static final int APPEND_FRAME = 252;
+  public static final int FULL_FRAME = 255;
 
   static final int ITEM_TOP = 0;
   static final int ITEM_INTEGER = 1;
@@ -121,8 +123,8 @@ class Frame {
   static final int ITEM_LONG = 4;
   static final int ITEM_NULL = 5;
   static final int ITEM_UNINITIALIZED_THIS = 6;
-  static final int ITEM_OBJECT = 7;
-  static final int ITEM_UNINITIALIZED = 8;
+  public static final int ITEM_OBJECT = 7;
+  public static final int ITEM_UNINITIALIZED = 8;
   // Additional, ASM specific constants used in abstract types below.
   private static final int ITEM_ASM_BOOLEAN = 9;
   private static final int ITEM_ASM_BYTE = 10;
@@ -190,7 +192,7 @@ class Frame {
   // -----------------------------------------------------------------------------------------------
 
   /** The basic block to which these input and output stack map frames correspond. */
-  Label owner;
+  public Label owner;
 
   /** The input stack map frame locals. This is an array of abstract types. */
   private int[] inputLocals;
@@ -239,7 +241,7 @@ class Frame {
    *
    * @param owner the basic block to which these input and output stack map frames correspond.
    */
-  Frame(final Label owner) {
+  public Frame(final Label owner) {
     this.owner = owner;
   }
 
@@ -277,7 +279,7 @@ class Frame {
    *     a NEW instruction (for uninitialized types).
    * @return the abstract type corresponding to the given frame element type.
    */
-  static int getAbstractTypeFromApiFormat(final SymbolTable symbolTable, final Object type) {
+  public static int getAbstractTypeFromApiFormat(final SymbolTable symbolTable, final Object type) {
     if (type instanceof Integer) {
       return CONSTANT_KIND | ((Integer) type).intValue();
     } else if (type instanceof String) {
@@ -297,8 +299,8 @@ class Frame {
    *     descriptor.
    * @return the abstract type value corresponding to the given internal name.
    */
-  static int getAbstractTypeFromInternalName(
-      final SymbolTable symbolTable, final String internalName) {
+  public static int getAbstractTypeFromInternalName(
+          final SymbolTable symbolTable, final String internalName) {
     return REFERENCE_KIND | symbolTable.addType(internalName);
   }
 
@@ -389,11 +391,11 @@ class Frame {
    * @param descriptor the method descriptor.
    * @param maxLocals the maximum number of local variables of the method.
    */
-  final void setInputFrameFromDescriptor(
-      final SymbolTable symbolTable,
-      final int access,
-      final String descriptor,
-      final int maxLocals) {
+  public final void setInputFrameFromDescriptor(
+          final SymbolTable symbolTable,
+          final int access,
+          final String descriptor,
+          final int maxLocals) {
     inputLocals = new int[maxLocals];
     inputStack = new int[0];
     int inputLocalIndex = 0;
@@ -429,12 +431,12 @@ class Frame {
    * @param stack the operand stack types, described using the same format as in {@link
    *     MethodVisitor#visitFrame}.
    */
-  final void setInputFrameFromApiFormat(
-      final SymbolTable symbolTable,
-      final int numLocal,
-      final Object[] local,
-      final int numStack,
-      final Object[] stack) {
+  public final void setInputFrameFromApiFormat(
+          final SymbolTable symbolTable,
+          final int numLocal,
+          final Object[] local,
+          final int numStack,
+          final Object[] stack) {
     int inputLocalIndex = 0;
     for (int i = 0; i < numLocal; ++i) {
       inputLocals[inputLocalIndex++] = getAbstractTypeFromApiFormat(symbolTable, local[i]);
@@ -463,7 +465,7 @@ class Frame {
     initializationCount = 0;
   }
 
-  final int getInputStackSize() {
+  public final int getInputStackSize() {
     return inputStack.length;
   }
 
@@ -677,8 +679,8 @@ class Frame {
    * @param argSymbol the Symbol operand of the instruction, if any.
    * @param symbolTable the type table to use to lookup and store type {@link Symbol}.
    */
-  void execute(
-      final int opcode, final int arg, final Symbol argSymbol, final SymbolTable symbolTable) {
+  public void execute(
+          final int opcode, final int arg, final Symbol argSymbol, final SymbolTable symbolTable) {
     // Abstract types popped from the stack or read from local variables.
     int abstractType1;
     int abstractType2;
@@ -1159,8 +1161,8 @@ class Frame {
    *     table index of the caught exception type, otherwise 0.
    * @return {@literal true} if the input frame of 'frame' has been changed by this operation.
    */
-  final boolean merge(
-      final SymbolTable symbolTable, final Frame dstFrame, final int catchTypeIndex) {
+  public final boolean merge(
+          final SymbolTable symbolTable, final Frame dstFrame, final int catchTypeIndex) {
     boolean frameChanged = false;
 
     // Compute the concrete types of the local variables at the end of the basic block corresponding
@@ -1350,7 +1352,50 @@ class Frame {
    * @param methodWriter the {@link MethodWriter} that should visit the input frame of this {@link
    *     Frame}.
    */
-  final void accept(final MethodWriter methodWriter) {
+  public final void accept(final MethodWriter methodWriter) {
+    // Compute the number of locals, ignoring TOP types that are just after a LONG or a DOUBLE, and
+    // all trailing TOP types.
+    int[] localTypes = inputLocals;
+    int numLocal = 0;
+    int numTrailingTop = 0;
+    int i = 0;
+    while (i < localTypes.length) {
+      int localType = localTypes[i];
+      i += (localType == LONG || localType == DOUBLE) ? 2 : 1;
+      if (localType == TOP) {
+        numTrailingTop++;
+      } else {
+        numLocal += numTrailingTop + 1;
+        numTrailingTop = 0;
+      }
+    }
+    // Compute the stack size, ignoring TOP types that are just after a LONG or a DOUBLE.
+    int[] stackTypes = inputStack;
+    int numStack = 0;
+    i = 0;
+    while (i < stackTypes.length) {
+      int stackType = stackTypes[i];
+      i += (stackType == LONG || stackType == DOUBLE) ? 2 : 1;
+      numStack++;
+    }
+    // Visit the frame and its content.
+    int frameIndex = methodWriter.visitFrameStart(owner.bytecodeOffset, numLocal, numStack);
+    i = 0;
+    while (numLocal-- > 0) {
+      int localType = localTypes[i];
+      i += (localType == LONG || localType == DOUBLE) ? 2 : 1;
+      methodWriter.visitAbstractType(frameIndex++, localType);
+    }
+    i = 0;
+    while (numStack-- > 0) {
+      int stackType = stackTypes[i];
+      i += (stackType == LONG || stackType == DOUBLE) ? 2 : 1;
+      methodWriter.visitAbstractType(frameIndex++, stackType);
+    }
+    methodWriter.visitFrameEnd();
+  }
+
+  public final void accept(final NopMethodWriter methodWriter) {
     // Compute the number of locals, ignoring TOP types that are just after a LONG or a DOUBLE, and
     // all trailing TOP types.
     int[] localTypes = inputLocals;
@@ -1404,8 +1449,8 @@ class Frame {
    * @see <a href="https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7.4">JVMS
    *     4.7.4</a>
    */
-  static void putAbstractType(
-      final SymbolTable symbolTable, final int abstractType, final ByteVector output) {
+  public static void putAbstractType(
+          final SymbolTable symbolTable, final int abstractType, final ByteVector output) {
     int arrayDimensions = (abstractType & Frame.DIM_MASK) >> DIM_SHIFT;
     if (arrayDimensions == 0) {
       int typeValue = abstractType & VALUE_MASK;

@@ -37,7 +37,7 @@ package org.objectweb.asm;
  *     4.7.23</a>
  * @author Eric Bruneton
  */
-abstract class Symbol {
+public abstract class Symbol {
 
   // Tag values for the constant pool entries (using the same order as in the JVMS).
 
@@ -54,7 +54,7 @@ abstract class Symbol {
   static final int CONSTANT_INTERFACE_METHODREF_TAG = 11;
 
   /** The tag value of CONSTANT_String_info JVMS structures. */
-  static final int CONSTANT_STRING_TAG = 8;
+  public static final int CONSTANT_STRING_TAG = 8;
 
   /** The tag value of CONSTANT_Integer_info JVMS structures. */
   static final int CONSTANT_INTEGER_TAG = 3;
@@ -63,10 +63,10 @@ abstract class Symbol {
   static final int CONSTANT_FLOAT_TAG = 4;
 
   /** The tag value of CONSTANT_Long_info JVMS structures. */
-  static final int CONSTANT_LONG_TAG = 5;
+  public static final int CONSTANT_LONG_TAG = 5;
 
   /** The tag value of CONSTANT_Double_info JVMS structures. */
-  static final int CONSTANT_DOUBLE_TAG = 6;
+  public static final int CONSTANT_DOUBLE_TAG = 6;
 
   /** The tag value of CONSTANT_NameAndType_info JVMS structures. */
   static final int CONSTANT_NAME_AND_TYPE_TAG = 12;
@@ -75,13 +75,13 @@ abstract class Symbol {
   static final int CONSTANT_UTF8_TAG = 1;
 
   /** The tag value of CONSTANT_MethodHandle_info JVMS structures. */
-  static final int CONSTANT_METHOD_HANDLE_TAG = 15;
+  public static final int CONSTANT_METHOD_HANDLE_TAG = 15;
 
   /** The tag value of CONSTANT_MethodType_info JVMS structures. */
-  static final int CONSTANT_METHOD_TYPE_TAG = 16;
+  public static final int CONSTANT_METHOD_TYPE_TAG = 16;
 
   /** The tag value of CONSTANT_Dynamic_info JVMS structures. */
-  static final int CONSTANT_DYNAMIC_TAG = 17;
+  public static final int CONSTANT_DYNAMIC_TAG = 17;
 
   /** The tag value of CONSTANT_InvokeDynamic_info JVMS structures. */
   static final int CONSTANT_INVOKE_DYNAMIC_TAG = 18;
@@ -116,13 +116,13 @@ abstract class Symbol {
    * The index of this symbol in the constant pool, in the BootstrapMethods attribute, or in the
    * (ASM specific) type table of a class (depending on the {@link #tag} value).
    */
-  final int index;
+  public final int index;
 
   /**
    * A tag indicating the type of this symbol. Must be one of the static tag values defined in this
    * class.
    */
-  final int tag;
+  public final int tag;
 
   /**
    * The internal name of the owner class of this symbol. Only used for {@link
@@ -156,7 +156,7 @@ abstract class Symbol {
    *   <li>{@literal null} for the other types of symbol.
    * </ul>
    */
-  final String value;
+  public final String value;
 
   /**
    * The numeric value of this symbol. This is:
@@ -234,7 +234,7 @@ abstract class Symbol {
    *     #CONSTANT_METHODREF_TAG}, {@link #CONSTANT_INTERFACE_METHODREF_TAG} and {@link
    *     #CONSTANT_INVOKE_DYNAMIC_TAG} symbols.
    */
-  int getArgumentsAndReturnSizes() {
+  public int getArgumentsAndReturnSizes() {
     if (info == 0) {
       info = Type.getArgumentsAndReturnSizes(value);
     }

@@ -190,7 +190,7 @@ public final class TypePath {
    * @param typePath a TypePath instance, or {@literal null} for empty paths.
    * @param output where the type path must be put.
    */
-  static void put(final TypePath typePath, final ByteVector output) {
+  public static void put(final TypePath typePath, final ByteVector output) {
     if (typePath == null) {
       output.putByte(0);
     } else {

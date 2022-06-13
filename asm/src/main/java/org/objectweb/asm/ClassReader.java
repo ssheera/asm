@@ -116,7 +116,7 @@ public class ClassReader {
    * necessarily start at offset 0. Use {@link #getItem} and {@link #header} to get correct
    * ClassFile element offsets within this byte array.
    */
-  final byte[] classFileBuffer;
+  public final byte[] classFileBuffer;
 
   /**
    * The offset in bytes, in {@link #classFileBuffer}, of each cp_info entry of the ClassFile's

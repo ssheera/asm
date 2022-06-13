@@ -54,7 +54,7 @@ public class Attribute {
    * The next attribute in this attribute list (Attribute instances can be linked via this field to
    * store a list of class, field, method or Code attributes). May be {@literal null}.
    */
-  Attribute nextAttribute;
+  public Attribute nextAttribute;
 
   /**
    * Constructs a new empty attribute.
@@ -164,7 +164,7 @@ public class Attribute {
    *
    * @return the number of attributes of the attribute list that begins with this attribute.
    */
-  final int getAttributeCount() {
+  public final int getAttributeCount() {
     int count = 0;
     Attribute attribute = this;
     while (attribute != null) {
@@ -183,7 +183,7 @@ public class Attribute {
    * @return the size of all the attributes in this attribute list. This size includes the size of
    *     the attribute headers.
    */
-  final int computeAttributesSize(final SymbolTable symbolTable) {
+  public final int computeAttributesSize(final SymbolTable symbolTable) {
     final byte[] code = null;
     final int codeLength = 0;
     final int maxStack = -1;
@@ -210,12 +210,12 @@ public class Attribute {
    * @return the size of all the attributes in this attribute list. This size includes the size of
    *     the attribute headers.
    */
-  final int computeAttributesSize(
-      final SymbolTable symbolTable,
-      final byte[] code,
-      final int codeLength,
-      final int maxStack,
-      final int maxLocals) {
+  public final int computeAttributesSize(
+          final SymbolTable symbolTable,
+          final byte[] code,
+          final int codeLength,
+          final int maxStack,
+          final int maxLocals) {
     final ClassWriter classWriter = symbolTable.classWriter;
     int size = 0;
     Attribute attribute = this;
@@ -239,8 +239,8 @@ public class Attribute {
    * @return the size of all the attributes in bytes. This size includes the size of the attribute
    *     headers.
    */
-  static int computeAttributesSize(
-      final SymbolTable symbolTable, final int accessFlags, final int signatureIndex) {
+  public static int computeAttributesSize(
+          final SymbolTable symbolTable, final int accessFlags, final int signatureIndex) {
     int size = 0;
     // Before Java 1.5, synthetic fields are represented with a Synthetic attribute.
     if ((accessFlags & Opcodes.ACC_SYNTHETIC) != 0
@@ -271,7 +271,7 @@ public class Attribute {
    * @param symbolTable where the constants used in the attributes must be stored.
    * @param output where the attributes must be written.
    */
-  final void putAttributes(final SymbolTable symbolTable, final ByteVector output) {
+  public final void putAttributes(final SymbolTable symbolTable, final ByteVector output) {
     final byte[] code = null;
     final int codeLength = 0;
     final int maxStack = -1;
@@ -297,13 +297,13 @@ public class Attribute {
    *     Code attributes, or -1 if they are not Code attribute.
    * @param output where the attributes must be written.
    */
-  final void putAttributes(
-      final SymbolTable symbolTable,
-      final byte[] code,
-      final int codeLength,
-      final int maxStack,
-      final int maxLocals,
-      final ByteVector output) {
+  public final void putAttributes(
+          final SymbolTable symbolTable,
+          final byte[] code,
+          final int codeLength,
+          final int maxStack,
+          final int maxLocals,
+          final ByteVector output) {
     final ClassWriter classWriter = symbolTable.classWriter;
     Attribute attribute = this;
     while (attribute != null) {
@@ -326,11 +326,11 @@ public class Attribute {
    * @param signatureIndex the constant pool index of a field, method of class signature.
    * @param output where the attributes must be written.
    */
-  static void putAttributes(
-      final SymbolTable symbolTable,
-      final int accessFlags,
-      final int signatureIndex,
-      final ByteVector output) {
+  public static void putAttributes(
+          final SymbolTable symbolTable,
+          final int accessFlags,
+          final int signatureIndex,
+          final ByteVector output) {
     // Before Java 1.5, synthetic fields are represented with a Synthetic attribute.
     if ((accessFlags & Opcodes.ACC_SYNTHETIC) != 0
         && symbolTable.getMajorVersion() < Opcodes.V1_5) {
@@ -348,14 +348,14 @@ public class Attribute {
   }
 
   /** A set of attribute prototypes (attributes with the same type are considered equal). */
-  static final class Set {
+  public static final class Set {
 
     private static final int SIZE_INCREMENT = 6;
 
     private int size;
     private Attribute[] data = new Attribute[SIZE_INCREMENT];
 
-    void addAttributes(final Attribute attributeList) {
+    public void addAttributes(final Attribute attributeList) {
       Attribute attribute = attributeList;
       while (attribute != null) {
         if (!contains(attribute)) {
