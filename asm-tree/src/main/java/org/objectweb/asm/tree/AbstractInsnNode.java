@@ -89,7 +89,7 @@ public abstract class AbstractInsnNode {
   public static final int LINE = 15;
 
   /** The opcode of this instruction. */
-  protected int opcode;
+  public int opcode;
 
   /**
    * The runtime visible type annotations of this instruction. This field is only used for real
@@ -123,7 +123,7 @@ public abstract class AbstractInsnNode {
    *
    * @param opcode the opcode of the instruction to be constructed.
    */
-  protected AbstractInsnNode(final int opcode) {
+  public AbstractInsnNode(final int opcode) {
     this.opcode = opcode;
     this.index = -1;
   }
