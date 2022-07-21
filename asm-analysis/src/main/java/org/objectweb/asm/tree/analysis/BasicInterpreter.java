@@ -312,7 +312,9 @@ public class BasicInterpreter extends Interpreter<BasicValue> implements Opcodes
       case DREM:
         return BasicValue.DOUBLE_VALUE;
       case AALOAD:
-        return new BasicValue(value1.getType().getElementType());
+        return BasicValue.REFERENCE_VALUE;
+//        System.out.println(value1.getType() + " " + value1.getType().getElementType());
+//        return new BasicValue(value1.getType().getElementType());
       case LCMP:
       case FCMPL:
       case FCMPG:

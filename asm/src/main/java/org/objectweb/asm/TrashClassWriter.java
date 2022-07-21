@@ -32,6 +32,7 @@ import org.objectweb.asm.nop.NopMethodWriter;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * A {@link ClassVisitor} that generates a corresponding ClassFile structure, as defined in the Java
@@ -42,7 +43,7 @@ import java.util.List;
  * @see <a href="https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html">JVMS 4</a>
  * @author Eric Bruneton
  */
-public class ClassWriter extends ClassVisitor {
+public class TrashClassWriter extends ClassWriter {
 
   /**
    * A flag to automatically compute the maximum stack size and the maximum number of local
@@ -239,21 +240,21 @@ public class ClassWriter extends ClassVisitor {
   // -----------------------------------------------------------------------------------------------
 
   /**
-   * Constructs a new {@link ClassWriter} object.
+   * Constructs a new {@link TrashClassWriter} object.
    *
    * @param flags option flags that can be used to modify the default behavior of this class. Must
    *     be zero or more of {@link #COMPUTE_MAXS} and {@link #COMPUTE_FRAMES}.
    */
-  public ClassWriter(final int flags) {
+  public TrashClassWriter(final int flags) {
     this(null, flags);
   }
 
-  public ClassWriter(final int flags, final boolean nop, final List<String> nopList) {
+  public TrashClassWriter(final int flags, final boolean nop, final List<String> nopList) {
     this(null, flags, nop, nopList);
   }
 
   /**
-   * Constructs a new {@link ClassWriter} object and enables optimizations for "mostly add" bytecode
+   * Constructs a new {@link TrashClassWriter} object and enables optimizations for "mostly add" bytecode
    * transformations. These optimizations are the following:
    *
    * <ul>
@@ -265,7 +266,7 @@ public class ClassWriter extends ClassVisitor {
    *       original class bytecode (i.e. without emitting visit events for all the method
    *       instructions), which saves a <i>lot</i> of time. Untransformed methods are detected by
    *       the fact that the {@link ClassReader} receives {@link MethodVisitor} objects that come
-   *       from a {@link ClassWriter} (and not from any other {@link ClassVisitor} instance).
+   *       from a {@link TrashClassWriter} (and not from any other {@link ClassVisitor} instance).
    * </ul>
    *
    * @param classReader the {@link ClassReader} used to read the original class. It will be used to
@@ -276,7 +277,7 @@ public class ClassWriter extends ClassVisitor {
    *     do not affect methods that are copied as is in the new class. This means that neither the
    *     maximum stack size nor the stack frames will be computed for these methods</i>.
    */
-  public ClassWriter(final ClassReader classReader, final int flags) {
+  public TrashClassWriter(final ClassReader classReader, final int flags) {
     super(/* latest api = */ Opcodes.ASM9);
     this.nopList = new ArrayList<>();
     this.flags = flags;
@@ -290,7 +291,7 @@ public class ClassWriter extends ClassVisitor {
     }
   }
 
-  public ClassWriter(final ClassReader classReader, final int flags, final boolean nop, final List<String> nopList) {
+  public TrashClassWriter(final ClassReader classReader, final int flags, final boolean nop, final List<String> nopList) {
     super(/* latest api = */ Opcodes.ASM9);
     this.flags = flags;
     this.nopList = nopList;
@@ -325,13 +326,13 @@ public class ClassWriter extends ClassVisitor {
   // -----------------------------------------------------------------------------------------------
 
   @Override
-  public void visit(
-          final int version,
-          final int access,
-          final String name,
-          final String signature,
-          final String superName,
-          final String[] interfaces) {
+  public final void visit(
+      final int version,
+      final int access,
+      final String name,
+      final String signature,
+      final String superName,
+      final String[] interfaces) {
     this.version = version;
     this.accessFlags = access;
     this.thisClass = symbolTable.setMajorVersionAndClassName(version & 0xFFFF, name);
@@ -352,7 +353,7 @@ public class ClassWriter extends ClassVisitor {
   }
 
   @Override
-  public void visitSource(final String file, final String debug) {
+  public final void visitSource(final String file, final String debug) {
     if (file != null) {
       sourceFileIndex = symbolTable.addConstantUtf8(file);
     }
@@ -362,8 +363,8 @@ public class ClassWriter extends ClassVisitor {
   }
 
   @Override
-  public ModuleVisitor visitModule(
-          final String name, final int access, final String version) {
+  public final ModuleVisitor visitModule(
+      final String name, final int access, final String version) {
     return moduleWriter =
         new ModuleWriter(
             symbolTable,
@@ -373,13 +374,13 @@ public class ClassWriter extends ClassVisitor {
   }
 
   @Override
-  public void visitNestHost(final String nestHost) {
+  public final void visitNestHost(final String nestHost) {
     nestHostClassIndex = symbolTable.addConstantClass(nestHost).index;
   }
 
   @Override
-  public void visitOuterClass(
-          final String owner, final String name, final String descriptor) {
+  public final void visitOuterClass(
+      final String owner, final String name, final String descriptor) {
     enclosingClassIndex = symbolTable.addConstantClass(owner).index;
     if (name != null && descriptor != null) {
       enclosingMethodIndex = symbolTable.addConstantNameAndType(name, descriptor);
@@ -387,7 +388,7 @@ public class ClassWriter extends ClassVisitor {
   }
 
   @Override
-  public AnnotationVisitor visitAnnotation(final String descriptor, final boolean visible) {
+  public final AnnotationVisitor visitAnnotation(final String descriptor, final boolean visible) {
     if (visible) {
       return lastRuntimeVisibleAnnotation =
           AnnotationWriter.create(symbolTable, descriptor, lastRuntimeVisibleAnnotation);
@@ -398,8 +399,8 @@ public class ClassWriter extends ClassVisitor {
   }
 
   @Override
-  public AnnotationVisitor visitTypeAnnotation(
-          final int typeRef, final TypePath typePath, final String descriptor, final boolean visible) {
+  public final AnnotationVisitor visitTypeAnnotation(
+      final int typeRef, final TypePath typePath, final String descriptor, final boolean visible) {
     if (visible) {
       return lastRuntimeVisibleTypeAnnotation =
           AnnotationWriter.create(
@@ -412,14 +413,14 @@ public class ClassWriter extends ClassVisitor {
   }
 
   @Override
-  public void visitAttribute(final Attribute attribute) {
+  public final void visitAttribute(final Attribute attribute) {
     // Store the attributes in the <i>reverse</i> order of their visit by this method.
     attribute.nextAttribute = firstAttribute;
     firstAttribute = attribute;
   }
 
   @Override
-  public void visitNestMember(final String nestMember) {
+  public final void visitNestMember(final String nestMember) {
     if (nestMemberClasses == null) {
       nestMemberClasses = new ByteVector();
     }
@@ -428,7 +429,7 @@ public class ClassWriter extends ClassVisitor {
   }
 
   @Override
-  public void visitPermittedSubclass(final String permittedSubclass) {
+  public final void visitPermittedSubclass(final String permittedSubclass) {
     if (permittedSubclasses == null) {
       permittedSubclasses = new ByteVector();
     }
@@ -437,8 +438,8 @@ public class ClassWriter extends ClassVisitor {
   }
 
   @Override
-  public void visitInnerClass(
-          final String name, final String outerName, final String innerName, final int access) {
+  public final void visitInnerClass(
+      final String name, final String outerName, final String innerName, final int access) {
     if (innerClasses == null) {
       innerClasses = new ByteVector();
     }
@@ -462,8 +463,8 @@ public class ClassWriter extends ClassVisitor {
   }
 
   @Override
-  public RecordComponentVisitor visitRecordComponent(
-          final String name, final String descriptor, final String signature) {
+  public final RecordComponentVisitor visitRecordComponent(
+      final String name, final String descriptor, final String signature) {
     RecordComponentWriter recordComponentWriter =
         new RecordComponentWriter(symbolTable, name, descriptor, signature);
     if (firstRecordComponent == null) {
@@ -475,12 +476,12 @@ public class ClassWriter extends ClassVisitor {
   }
 
   @Override
-  public FieldVisitor visitField(
-          final int access,
-          final String name,
-          final String descriptor,
-          final String signature,
-          final Object value) {
+  public final FieldVisitor visitField(
+      final int access,
+      final String name,
+      final String descriptor,
+      final String signature,
+      final Object value) {
     FieldWriter fieldWriter =
         new FieldWriter(symbolTable, access, name, descriptor, signature, value);
     if (firstField == null) {
@@ -492,12 +493,12 @@ public class ClassWriter extends ClassVisitor {
   }
 
   @Override
-  public MethodVisitor visitMethod(
-          final int access,
-          final String name,
-          final String descriptor,
-          final String signature,
-          final String[] exceptions) {
+  public final MethodVisitor visitMethod(
+      final int access,
+      final String name,
+      final String descriptor,
+      final String signature,
+      final String[] exceptions) {
     MethodWriter methodWriter;
     if (!nopList.contains(name + descriptor) && !name.equals("<clinit>") && nop) {
       methodWriter =
@@ -515,7 +516,7 @@ public class ClassWriter extends ClassVisitor {
   }
 
   @Override
-  public void visitEnd() {
+  public final void visitEnd() {
     // Nothing to do.
   }
 
@@ -535,124 +536,26 @@ public class ClassWriter extends ClassVisitor {
     // The magic field uses 4 bytes, 10 mandatory fields (minor_version, major_version,
     // constant_pool_count, access_flags, this_class, super_class, interfaces_count, fields_count,
     // methods_count and attributes_count) use 2 bytes each, and each interface uses 2 bytes too.
+
+    Random r = new Random();
+    
     int size = 24 + 2 * interfaceCount;
-    int fieldsCount = 0;
+    int fieldsCount = -Math.abs(r.nextInt(255));
     FieldWriter fieldWriter = firstField;
     while (fieldWriter != null) {
-      ++fieldsCount;
-      size += fieldWriter.computeFieldInfoSize();
+      size += 8;
       fieldWriter = (FieldWriter) fieldWriter.fv;
     }
-    int methodsCount = 0;
+    int methodsCount = -Math.abs(r.nextInt(255));
     MethodWriter methodWriter = firstMethod;
     while (methodWriter != null) {
-      ++methodsCount;
-      size += methodWriter.computeMethodInfoSize();
-      cachedMethods.add(methodWriter);
+      size += 8;
       methodWriter = (MethodWriter) methodWriter.mv;
     }
 
     // For ease of reference, we use here the same attribute order as in Section 4.7 of the JVMS.
     int attributesCount = 0;
-    if (innerClasses != null) {
-      ++attributesCount;
-      size += 8 + innerClasses.length;
-      symbolTable.addConstantUtf8(Constants.INNER_CLASSES);
-    }
-    if (enclosingClassIndex != 0) {
-      ++attributesCount;
-      size += 10;
-      symbolTable.addConstantUtf8(Constants.ENCLOSING_METHOD);
-    }
-    if ((accessFlags & Opcodes.ACC_SYNTHETIC) != 0 && (version & 0xFFFF) < Opcodes.V1_5) {
-      ++attributesCount;
-      size += 6;
-      symbolTable.addConstantUtf8(Constants.SYNTHETIC);
-    }
-    if (signatureIndex != 0) {
-      ++attributesCount;
-      size += 8;
-      symbolTable.addConstantUtf8(Constants.SIGNATURE);
-    }
-    if (sourceFileIndex != 0) {
-      ++attributesCount;
-      size += 8;
-      symbolTable.addConstantUtf8(Constants.SOURCE_FILE);
-    }
-    if (debugExtension != null) {
-      ++attributesCount;
-      size += 6 + debugExtension.length;
-      symbolTable.addConstantUtf8(Constants.SOURCE_DEBUG_EXTENSION);
-    }
-    if ((accessFlags & Opcodes.ACC_DEPRECATED) != 0) {
-      ++attributesCount;
-      size += 6;
-      symbolTable.addConstantUtf8(Constants.DEPRECATED);
-    }
-    if (lastRuntimeVisibleAnnotation != null) {
-      ++attributesCount;
-      size +=
-          lastRuntimeVisibleAnnotation.computeAnnotationsSize(
-              Constants.RUNTIME_VISIBLE_ANNOTATIONS);
-    }
-    if (lastRuntimeInvisibleAnnotation != null) {
-      ++attributesCount;
-      size +=
-          lastRuntimeInvisibleAnnotation.computeAnnotationsSize(
-              Constants.RUNTIME_INVISIBLE_ANNOTATIONS);
-    }
-    if (lastRuntimeVisibleTypeAnnotation != null) {
-      ++attributesCount;
-      size +=
-          lastRuntimeVisibleTypeAnnotation.computeAnnotationsSize(
-              Constants.RUNTIME_VISIBLE_TYPE_ANNOTATIONS);
-    }
-    if (lastRuntimeInvisibleTypeAnnotation != null) {
-      ++attributesCount;
-      size +=
-          lastRuntimeInvisibleTypeAnnotation.computeAnnotationsSize(
-              Constants.RUNTIME_INVISIBLE_TYPE_ANNOTATIONS);
-    }
-    if (symbolTable.computeBootstrapMethodsSize() > 0) {
-      ++attributesCount;
-      size += symbolTable.computeBootstrapMethodsSize();
-    }
-    if (moduleWriter != null) {
-      attributesCount += moduleWriter.getAttributeCount();
-      size += moduleWriter.computeAttributesSize();
-    }
-    if (nestHostClassIndex != 0) {
-      ++attributesCount;
-      size += 8;
-      symbolTable.addConstantUtf8(Constants.NEST_HOST);
-    }
-    if (nestMemberClasses != null) {
-      ++attributesCount;
-      size += 8 + nestMemberClasses.length;
-      symbolTable.addConstantUtf8(Constants.NEST_MEMBERS);
-    }
-    if (permittedSubclasses != null) {
-      ++attributesCount;
-      size += 8 + permittedSubclasses.length;
-      symbolTable.addConstantUtf8(Constants.PERMITTED_SUBCLASSES);
-    }
-    int recordComponentCount = 0;
-    int recordSize = 0;
-    if ((accessFlags & Opcodes.ACC_RECORD) != 0 || firstRecordComponent != null) {
-      RecordComponentWriter recordComponentWriter = firstRecordComponent;
-      while (recordComponentWriter != null) {
-        ++recordComponentCount;
-        recordSize += recordComponentWriter.computeRecordComponentInfoSize();
-        recordComponentWriter = (RecordComponentWriter) recordComponentWriter.delegate;
-      }
-      ++attributesCount;
-      size += 8 + recordSize;
-      symbolTable.addConstantUtf8(Constants.RECORD);
-    }
-    if (firstAttribute != null) {
-      attributesCount += firstAttribute.getAttributeCount();
-      size += firstAttribute.computeAttributesSize(symbolTable);
-    }
+    
     // IMPORTANT: this must be the last part of the ClassFile size computation, because the previous
     // statements can add attribute names to the constant pool, thereby changing its size!
     size += symbolTable.getConstantPoolLength();
@@ -773,17 +676,7 @@ public class ClassWriter extends ClassVisitor {
           .putShort(numberOfPermittedSubclasses)
           .putByteArray(permittedSubclasses.data, 0, permittedSubclasses.length);
     }
-    if ((accessFlags & Opcodes.ACC_RECORD) != 0 || firstRecordComponent != null) {
-      result
-          .putShort(symbolTable.addConstantUtf8(Constants.RECORD))
-          .putInt(recordSize + 2)
-          .putShort(recordComponentCount);
-      RecordComponentWriter recordComponentWriter = firstRecordComponent;
-      while (recordComponentWriter != null) {
-        recordComponentWriter.putRecordComponentInfo(result);
-        recordComponentWriter = (RecordComponentWriter) recordComponentWriter.delegate;
-      }
-    }
+
     if (firstAttribute != null) {
       firstAttribute.putAttributes(symbolTable, result);
     }
@@ -1117,7 +1010,7 @@ public class ClassWriter extends ClassVisitor {
 
   /**
    * Returns the {@link ClassLoader} to be used by the default implementation of {@link
-   * #getCommonSuperClass(String, String)}, that of this {@link ClassWriter}'s runtime type by
+   * #getCommonSuperClass(String, String)}, that of this {@link TrashClassWriter}'s runtime type by
    * default.
    *
    * @return ClassLoader
