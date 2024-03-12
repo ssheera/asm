@@ -44,13 +44,13 @@ public class SymbolTable {
    * ClassWriter#getCommonSuperClass} and to serialize custom attributes with {@link
    * Attribute#write}.
    */
-  public final ClassWriter classWriter;
+  public ClassWriter classWriter;
 
   /**
    * The ClassReader from which this SymbolTable was constructed, or {@literal null} if it was
    * constructed from scratch.
    */
-  public final ClassReader sourceClassReader;
+  public ClassReader sourceClassReader;
 
   /** The major version number of the class to which this symbol table belongs. */
   public int majorVersion;
@@ -112,6 +112,47 @@ public class SymbolTable {
    * {@code i} has its {@link Symbol#index} equal to {@code i} (and vice versa).
    */
   public Entry[] typeTable;
+
+  public SymbolTable clone() {
+
+    SymbolTable sym = new SymbolTable(null);
+    sym.classWriter = classWriter;
+    sym.sourceClassReader = sourceClassReader;
+    sym.majorVersion = majorVersion;
+    sym.className = className;
+    sym.entryCount = entryCount;
+    if (entries != null) {
+      sym.entries = new Entry[entries.length];
+      for (int i = 0; i < entries.length; i++) {
+        Entry e = entries[i];
+        if (e != null) {
+          sym.entries[i] = e.clone();
+        }
+      }
+    }
+    sym.constantPoolCount = constantPoolCount;
+    if (constantPool != null) {
+      sym.constantPool = new ByteVector(constantPool.length);
+      sym.constantPool.putByteArray(constantPool.data, 0, constantPool.length);
+    }
+    sym.bootstrapMethodCount = bootstrapMethodCount;
+    if (bootstrapMethods != null) {
+      sym.bootstrapMethods = new ByteVector(bootstrapMethods.length);
+      sym.bootstrapMethods.putByteArray(bootstrapMethods.data, 0, bootstrapMethods.length);
+    }
+    sym.typeCount = typeCount;
+    if (typeTable != null) {
+      sym.typeTable = new Entry[typeTable.length];
+      for (int i = 0; i < typeTable.length; i++) {
+        Entry e = typeTable[i];
+        if (e != null) {
+          sym.typeTable[i] = e.clone();
+        }
+      }
+    }
+
+    return sym;
+  }
 
   /**
    * Constructs a new, empty SymbolTable for the given ClassWriter.
@@ -828,7 +869,7 @@ public class SymbolTable {
           tag, referenceKind, addConstantMethodref(owner, name, descriptor, isInterface).index);
     }
     return put(
-        new Entry(constantPoolCount++, tag, owner, name, descriptor, referenceKind, hashCode));
+        new Entry(constantPoolCount++, tag, owner, name, descriptor, referenceKind, hashCode, isInterface));
   }
 
   /**
@@ -901,7 +942,7 @@ public class SymbolTable {
       final String name,
       final String descriptor,
       final Handle bootstrapMethodHandle,
-      final Object... bootstrapMethodArguments) {
+      final Object[] bootstrapMethodArguments) {
     Symbol bootstrapMethod = addBootstrapMethod(bootstrapMethodHandle, bootstrapMethodArguments);
     return addConstantDynamicOrInvokeDynamicReference(
         Symbol.CONSTANT_INVOKE_DYNAMIC_TAG, name, descriptor, bootstrapMethod.index);
@@ -1006,6 +1047,20 @@ public class SymbolTable {
     }
     constantPool.put12(tag, addConstantUtf8(value));
     return put(new Entry(constantPoolCount++, tag, value, hashCode));
+  }
+
+  public Symbol addConstantUtf8ReferenceIndex(final int tag, final int index, final String value) {
+    int hashCode = hash(tag, value);
+    Entry entry = get(hashCode);
+    while (entry != null) {
+      if (entry.tag == tag && entry.hashCode == hashCode && entry.value.equals(value)) {
+        return entry;
+      }
+      entry = entry.next;
+    }
+    constantPool.put12(tag, addConstantUtf8(value));
+    constantPoolCount++;
+    return put(new Entry(index, tag, value, hashCode));
   }
 
   /**
@@ -1278,7 +1333,11 @@ public class SymbolTable {
   public static class Entry extends Symbol {
 
     /** The hash code of this entry. */
-    final int hashCode;
+    public final int hashCode;
+
+    public Entry clone() {
+        return new Entry(index, tag, owner, name, value, data, hashCode);
+    }
 
     /**
      * Another entry (and so on recursively) having the same hash code (modulo the size of {@link
@@ -1286,7 +1345,7 @@ public class SymbolTable {
      */
     Entry next;
 
-    Entry(
+    public Entry(
         final int index,
         final int tag,
         final String owner,
@@ -1298,23 +1357,36 @@ public class SymbolTable {
       this.hashCode = hashCode;
     }
 
-    Entry(final int index, final int tag, final String value, final int hashCode) {
+    public Entry(
+            final int index,
+            final int tag,
+            final String owner,
+            final String name,
+            final String value,
+            final long data,
+            final int hashCode,
+            final boolean isInterface) {
+      super(index, tag, owner, name, value, data, isInterface);
+      this.hashCode = hashCode;
+    }
+
+    public Entry(final int index, final int tag, final String value, final int hashCode) {
       super(index, tag, /* owner = */ null, /* name = */ null, value, /* data = */ 0);
       this.hashCode = hashCode;
     }
 
-    Entry(final int index, final int tag, final String value, final long data, final int hashCode) {
+    public Entry(final int index, final int tag, final String value, final long data, final int hashCode) {
       super(index, tag, /* owner = */ null, /* name = */ null, value, data);
       this.hashCode = hashCode;
     }
 
-    Entry(
+    public Entry(
         final int index, final int tag, final String name, final String value, final int hashCode) {
       super(index, tag, /* owner = */ null, name, value, /* data = */ 0);
       this.hashCode = hashCode;
     }
 
-    Entry(final int index, final int tag, final long data, final int hashCode) {
+    public Entry(final int index, final int tag, final long data, final int hashCode) {
       super(index, tag, /* owner = */ null, /* name = */ null, /* value = */ null, data);
       this.hashCode = hashCode;
     }

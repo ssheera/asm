@@ -42,25 +42,25 @@ public abstract class Symbol {
   // Tag values for the constant pool entries (using the same order as in the JVMS).
 
   /** The tag value of CONSTANT_Class_info JVMS structures. */
-  static final int CONSTANT_CLASS_TAG = 7;
+  public static final int CONSTANT_CLASS_TAG = 7;
 
   /** The tag value of CONSTANT_Fieldref_info JVMS structures. */
-  static final int CONSTANT_FIELDREF_TAG = 9;
+  public static final int CONSTANT_FIELDREF_TAG = 9;
 
   /** The tag value of CONSTANT_Methodref_info JVMS structures. */
-  static final int CONSTANT_METHODREF_TAG = 10;
+  public static final int CONSTANT_METHODREF_TAG = 10;
 
   /** The tag value of CONSTANT_InterfaceMethodref_info JVMS structures. */
-  static final int CONSTANT_INTERFACE_METHODREF_TAG = 11;
+  public static final int CONSTANT_INTERFACE_METHODREF_TAG = 11;
 
   /** The tag value of CONSTANT_String_info JVMS structures. */
   public static final int CONSTANT_STRING_TAG = 8;
 
   /** The tag value of CONSTANT_Integer_info JVMS structures. */
-  static final int CONSTANT_INTEGER_TAG = 3;
+  public static final int CONSTANT_INTEGER_TAG = 3;
 
   /** The tag value of CONSTANT_Float_info JVMS structures. */
-  static final int CONSTANT_FLOAT_TAG = 4;
+  public static final int CONSTANT_FLOAT_TAG = 4;
 
   /** The tag value of CONSTANT_Long_info JVMS structures. */
   public static final int CONSTANT_LONG_TAG = 5;
@@ -69,10 +69,10 @@ public abstract class Symbol {
   public static final int CONSTANT_DOUBLE_TAG = 6;
 
   /** The tag value of CONSTANT_NameAndType_info JVMS structures. */
-  static final int CONSTANT_NAME_AND_TYPE_TAG = 12;
+  public static final int CONSTANT_NAME_AND_TYPE_TAG = 12;
 
   /** The tag value of CONSTANT_Utf8_info JVMS structures. */
-  static final int CONSTANT_UTF8_TAG = 1;
+  public static final int CONSTANT_UTF8_TAG = 1;
 
   /** The tag value of CONSTANT_MethodHandle_info JVMS structures. */
   public static final int CONSTANT_METHOD_HANDLE_TAG = 15;
@@ -84,31 +84,31 @@ public abstract class Symbol {
   public static final int CONSTANT_DYNAMIC_TAG = 17;
 
   /** The tag value of CONSTANT_InvokeDynamic_info JVMS structures. */
-  static final int CONSTANT_INVOKE_DYNAMIC_TAG = 18;
+  public static final int CONSTANT_INVOKE_DYNAMIC_TAG = 18;
 
   /** The tag value of CONSTANT_Module_info JVMS structures. */
-  static final int CONSTANT_MODULE_TAG = 19;
+  public static final int CONSTANT_MODULE_TAG = 19;
 
   /** The tag value of CONSTANT_Package_info JVMS structures. */
-  static final int CONSTANT_PACKAGE_TAG = 20;
+  public static final int CONSTANT_PACKAGE_TAG = 20;
 
   // Tag values for the BootstrapMethods attribute entries (ASM specific tag).
 
   /** The tag value of the BootstrapMethods attribute entries. */
-  static final int BOOTSTRAP_METHOD_TAG = 64;
+  public static final int BOOTSTRAP_METHOD_TAG = 64;
 
   // Tag values for the type table entries (ASM specific tags).
 
   /** The tag value of a normal type entry in the (ASM specific) type table of a class. */
-  static final int TYPE_TAG = 128;
+  public static final int TYPE_TAG = 128;
 
   /**
    * The tag value of an {@link Frame#ITEM_UNINITIALIZED} type entry in the type table of a class.
    */
-  static final int UNINITIALIZED_TYPE_TAG = 129;
+  public static final int UNINITIALIZED_TYPE_TAG = 129;
 
   /** The tag value of a merged type entry in the (ASM specific) type table of a class. */
-  static final int MERGED_TYPE_TAG = 130;
+  public static final int MERGED_TYPE_TAG = 130;
 
   // Instance fields.
 
@@ -129,7 +129,7 @@ public abstract class Symbol {
    * #CONSTANT_FIELDREF_TAG}, {@link #CONSTANT_METHODREF_TAG}, {@link
    * #CONSTANT_INTERFACE_METHODREF_TAG}, and {@link #CONSTANT_METHOD_HANDLE_TAG} symbols.
    */
-  final String owner;
+  public final String owner;
 
   /**
    * The name of the class field or method corresponding to this symbol. Only used for {@link
@@ -138,7 +138,7 @@ public abstract class Symbol {
    * #CONSTANT_METHOD_HANDLE_TAG}, {@link #CONSTANT_DYNAMIC_TAG} and {@link
    * #CONSTANT_INVOKE_DYNAMIC_TAG} symbols.
    */
-  final String name;
+  public final String name;
 
   /**
    * The string value of this symbol. This is:
@@ -177,7 +177,7 @@ public abstract class Symbol {
    *   <li>0 for the other types of symbol.
    * </ul>
    */
-  final long data;
+  public final long data;
 
   /**
    * Additional information about this symbol, generally computed lazily. <i>Warning: the value of
@@ -196,7 +196,8 @@ public abstract class Symbol {
    *   <li>0 for the other types of symbol, or if this field has not been computed yet.
    * </ul>
    */
-  int info;
+  public int info;
+  public boolean isInterface;
 
   /**
    * Constructs a new Symbol. This constructor can't be used directly because the Symbol class is
@@ -224,6 +225,11 @@ public abstract class Symbol {
     this.name = name;
     this.value = value;
     this.data = data;
+  }
+
+  public Symbol(int index, int tag, String owner, String name, String value, long data, boolean isInterface) {
+    this(index, tag, owner, name, value, data);
+    this.isInterface = isInterface;
   }
 
   /**

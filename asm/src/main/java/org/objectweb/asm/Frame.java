@@ -27,7 +27,8 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 package org.objectweb.asm;
 
-import org.objectweb.asm.nop.NopMethodWriter;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * The input and output stack map frames of a basic block.
@@ -195,7 +196,7 @@ public class Frame {
   public Label owner;
 
   /** The input stack map frame locals. This is an array of abstract types. */
-  private int[] inputLocals;
+  public int[] inputLocals;
 
   /** The input stack map frame stack. This is an array of abstract types. */
   private int[] inputStack;
@@ -395,7 +396,9 @@ public class Frame {
           final SymbolTable symbolTable,
           final int access,
           final String descriptor,
-          final int maxLocals) {
+          int maxLocals,
+          final Map<Integer, Type> localTypes) {
+
     inputLocals = new int[maxLocals];
     inputStack = new int[0];
     int inputLocalIndex = 0;
@@ -416,7 +419,26 @@ public class Frame {
       }
     }
     while (inputLocalIndex < maxLocals) {
-      inputLocals[inputLocalIndex++] = TOP;
+        inputLocals[inputLocalIndex++] = TOP;
+    }
+
+    inputLocalIndex = 0;
+    while (inputLocalIndex < maxLocals) {
+      if (localTypes.containsKey(inputLocalIndex)) {
+        Type localType = localTypes.get(inputLocalIndex);
+        int abstractType = getAbstractTypeFromDescriptor(symbolTable, localType.getDescriptor(), 0);
+
+        inputLocals[inputLocalIndex] = abstractType;
+        setLocal(inputLocalIndex++, abstractType);
+
+        if (abstractType == LONG || abstractType == DOUBLE) {
+          inputLocals[inputLocalIndex] = TOP;
+          setLocal(inputLocalIndex++, TOP);
+        }
+
+      } else {
+          inputLocalIndex++;
+      }
     }
   }
 
@@ -807,6 +829,13 @@ public class Frame {
       case Opcodes.DSTORE:
         pop(1);
         abstractType1 = pop();
+
+        if (opcode == Opcodes.LSTORE) {
+          abstractType1 = LONG;
+        } else {
+          abstractType1 = DOUBLE;
+        }
+
         setLocal(arg, abstractType1);
         setLocal(arg + 1, TOP);
         if (arg > 0) {
@@ -1356,49 +1385,7 @@ public class Frame {
     // Compute the number of locals, ignoring TOP types that are just after a LONG or a DOUBLE, and
     // all trailing TOP types.
     int[] localTypes = inputLocals;
-    int numLocal = 0;
-    int numTrailingTop = 0;
-    int i = 0;
-    while (i < localTypes.length) {
-      int localType = localTypes[i];
-      i += (localType == LONG || localType == DOUBLE) ? 2 : 1;
-      if (localType == TOP) {
-        numTrailingTop++;
-      } else {
-        numLocal += numTrailingTop + 1;
-        numTrailingTop = 0;
-      }
-    }
-    // Compute the stack size, ignoring TOP types that are just after a LONG or a DOUBLE.
-    int[] stackTypes = inputStack;
-    int numStack = 0;
-    i = 0;
-    while (i < stackTypes.length) {
-      int stackType = stackTypes[i];
-      i += (stackType == LONG || stackType == DOUBLE) ? 2 : 1;
-      numStack++;
-    }
-    // Visit the frame and its content.
-    int frameIndex = methodWriter.visitFrameStart(owner.bytecodeOffset, numLocal, numStack);
-    i = 0;
-    while (numLocal-- > 0) {
-      int localType = localTypes[i];
-      i += (localType == LONG || localType == DOUBLE) ? 2 : 1;
-      methodWriter.visitAbstractType(frameIndex++, localType);
-    }
-    i = 0;
-    while (numStack-- > 0) {
-      int stackType = stackTypes[i];
-      i += (stackType == LONG || stackType == DOUBLE) ? 2 : 1;
-      methodWriter.visitAbstractType(frameIndex++, stackType);
-    }
-    methodWriter.visitFrameEnd();
-  }
 
-  public final void accept(final NopMethodWriter methodWriter) {
-    // Compute the number of locals, ignoring TOP types that are just after a LONG or a DOUBLE, and
-    // all trailing TOP types.
-    int[] localTypes = inputLocals;
     int numLocal = 0;
     int numTrailingTop = 0;
     int i = 0;

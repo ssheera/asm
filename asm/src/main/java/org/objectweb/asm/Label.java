@@ -37,6 +37,8 @@ package org.objectweb.asm;
  */
 public class Label {
 
+  public int writtenOffset;
+
   /**
    * A flag indicating that a label is only used for debug attributes. Such a label is not the start
    * of a basic block, the target of a jump instruction, or an exception handler. It can be safely
@@ -397,6 +399,7 @@ public class Label {
       } else {
         code.putShort(bytecodeOffset - sourceInsnBytecodeOffset);
       }
+      writtenOffset = bytecodeOffset - sourceInsnBytecodeOffset;
     }
   }
 

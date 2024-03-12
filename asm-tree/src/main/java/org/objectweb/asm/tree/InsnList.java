@@ -29,6 +29,8 @@ package org.objectweb.asm.tree;
 
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
+import java.util.stream.Stream;
+
 import org.objectweb.asm.MethodVisitor;
 
 /**
@@ -474,6 +476,10 @@ public class InsnList implements Iterable<AbstractInsnNode> {
       }
       currentInsn = currentInsn.nextInsn;
     }
+  }
+
+  public Stream<AbstractInsnNode> stream() {
+    return Stream.of(toArray());
   }
 
   // Note: this class is not generified because it would create bridges.

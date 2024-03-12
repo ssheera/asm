@@ -27,6 +27,12 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 package org.objectweb.asm;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+
 /**
  * A {@link MethodVisitor} that generates a corresponding 'method_info' structure, as defined in the
  * Java Virtual Machine Specification (JVMS).
@@ -282,6 +288,7 @@ public class MethodWriter extends MethodVisitor {
     NA, // goto_w = 200 (0xc8)
     NA // jsr_w = 201 (0xc9)
   };
+  private int classNodeVersion;
 
   /** Where the constants used in this MethodWriter must be stored. */
   public SymbolTable symbolTable;
@@ -319,20 +326,6 @@ public class MethodWriter extends MethodVisitor {
   /** The 'code' field of the Code attribute. */
   public ByteVector code = new ByteVector();
 
-  /**
-   * The first element in the exception handler list (used to generate the exception_table of the
-   * Code attribute). The next ones can be accessed with the {@link Handler#nextHandler} field. May
-   * be {@literal null}.
-   */
-  private Handler firstHandler;
-
-  /**
-   * The last element in the exception handler list (used to generate the exception_table of the
-   * Code attribute). The next ones can be accessed with the {@link Handler#nextHandler} field. May
-   * be {@literal null}.
-   */
-  private Handler lastHandler;
-
   /** The line_number_table_length field of the LineNumberTable code attribute. */
   private int lineNumberTableLength;
 
@@ -356,21 +349,15 @@ public class MethodWriter extends MethodVisitor {
    */
   private ByteVector localVariableTypeTable;
 
-  /** The number_of_entries field of the StackMapTable code attribute. */
-  private int stackMapTableNumberOfEntries;
-
-  /** The 'entries' array of the StackMapTable code attribute. */
-  private ByteVector stackMapTableEntries;
-
   /**
    * The last runtime visible type annotation of the Code attribute. The previous ones can be
-   * accessed with the {@link AnnotationWriter#previousAnnotation} field. May be {@literal null}.
+   * accessed with the {AnnotationWriter#previousAnnotation} field. May be {@literal null}.
    */
   private AnnotationWriter lastCodeRuntimeVisibleTypeAnnotation;
 
   /**
    * The last runtime invisible type annotation of the Code attribute. The previous ones can be
-   * accessed with the {@link AnnotationWriter#previousAnnotation} field. May be {@literal null}.
+   * accessed with the {AnnotationWriter#previousAnnotation} field. May be {@literal null}.
    */
   private AnnotationWriter lastCodeRuntimeInvisibleTypeAnnotation;
 
@@ -398,13 +385,13 @@ public class MethodWriter extends MethodVisitor {
 
   /**
    * The last runtime visible annotation of this method. The previous ones can be accessed with the
-   * {@link AnnotationWriter#previousAnnotation} field. May be {@literal null}.
+   * {AnnotationWriter#previousAnnotation} field. May be {@literal null}.
    */
   private AnnotationWriter lastRuntimeVisibleAnnotation;
 
   /**
    * The last runtime invisible annotation of this method. The previous ones can be accessed with
-   * the {@link AnnotationWriter#previousAnnotation} field. May be {@literal null}.
+   * the {AnnotationWriter#previousAnnotation} field. May be {@literal null}.
    */
   private AnnotationWriter lastRuntimeInvisibleAnnotation;
 
@@ -414,7 +401,7 @@ public class MethodWriter extends MethodVisitor {
   /**
    * The runtime visible parameter annotations of this method. Each array element contains the last
    * annotation of a parameter (which can be {@literal null} - the previous ones can be accessed
-   * with the {@link AnnotationWriter#previousAnnotation} field). May be {@literal null}.
+   * with the {AnnotationWriter#previousAnnotation} field). May be {@literal null}.
    */
   private AnnotationWriter[] lastRuntimeVisibleParameterAnnotations;
 
@@ -424,19 +411,19 @@ public class MethodWriter extends MethodVisitor {
   /**
    * The runtime invisible parameter annotations of this method. Each array element contains the
    * last annotation of a parameter (which can be {@literal null} - the previous ones can be
-   * accessed with the {@link AnnotationWriter#previousAnnotation} field). May be {@literal null}.
+   * accessed with the {AnnotationWriter#previousAnnotation} field). May be {@literal null}.
    */
   private AnnotationWriter[] lastRuntimeInvisibleParameterAnnotations;
 
   /**
    * The last runtime visible type annotation of this method. The previous ones can be accessed with
-   * the {@link AnnotationWriter#previousAnnotation} field. May be {@literal null}.
+   * the {AnnotationWriter#previousAnnotation} field. May be {@literal null}.
    */
   private AnnotationWriter lastRuntimeVisibleTypeAnnotation;
 
   /**
    * The last runtime invisible type annotation of this method. The previous ones can be accessed
-   * with the {@link AnnotationWriter#previousAnnotation} field. May be {@literal null}.
+   * with the {AnnotationWriter#previousAnnotation} field. May be {@literal null}.
    */
   private AnnotationWriter lastRuntimeInvisibleTypeAnnotation;
 
@@ -466,7 +453,7 @@ public class MethodWriter extends MethodVisitor {
 
   /**
    * Indicates what must be computed. Must be one of {@link #COMPUTE_ALL_FRAMES}, {@link
-   * #COMPUTE_INSERTED_FRAMES}, {@link COMPUTE_MAX_STACK_AND_LOCAL_FROM_FRAMES}, {@link
+   * #COMPUTE_INSERTED_FRAMES}, {COMPUTE_MAX_STACK_AND_LOCAL_FROM_FRAMES}, {@link
    * #COMPUTE_MAX_STACK_AND_LOCAL} or {@link #COMPUTE_NOTHING}.
    */
   public int compute;
@@ -534,7 +521,7 @@ public class MethodWriter extends MethodVisitor {
    * the number of stack elements. The local variables start at index 3 and are followed by the
    * operand stack elements. In summary frame[0] = offset, frame[1] = numLocal, frame[2] = numStack.
    * Local variables and operand stack entries contain abstract types, as defined in {@link Frame},
-   * but restricted to {@link Frame#CONSTANT_KIND}, {@link Frame#REFERENCE_KIND} or {@link
+   * but restricted to {Frame#CONSTANT_KIND}, {Frame#REFERENCE_KIND} or {
    * Frame#UNINITIALIZED_KIND} abstract types. Long and double types use only one array entry.
    */
   private int[] currentFrame;
@@ -570,6 +557,12 @@ public class MethodWriter extends MethodVisitor {
    */
   private int sourceLength;
 
+  public Map<Integer, Object> valueMap = new HashMap<>();
+
+  public BiConsumer<ClassWriter, MethodWriter> callback;
+
+  public ClassWriter classWriter;
+
   // -----------------------------------------------------------------------------------------------
   // Constructor and accessors
   // -----------------------------------------------------------------------------------------------
@@ -583,7 +576,6 @@ public class MethodWriter extends MethodVisitor {
    * @param descriptor the method's descriptor (see {@link Type}).
    * @param signature the method's signature. May be {@literal null}.
    * @param exceptions the internal names of the method's exceptions. May be {@literal null}.
-   * @param compute indicates what must be computed (see #compute).
    */
 
   public MethodWriter(
@@ -603,8 +595,10 @@ public class MethodWriter extends MethodVisitor {
       final String descriptor,
       final String signature,
       final String[] exceptions,
-      final int compute) {
+      final int compute,
+      final int classNodeVersion) {
     super(/* latest api = */ Opcodes.ASM9);
+    this.classNodeVersion = classNodeVersion;
     this.symbolTable = symbolTable;
     this.accessFlags = "<init>".equals(name) ? access | Constants.ACC_CONSTRUCTOR : access;
     this.nameIndex = symbolTable.addConstantUtf8(name);
@@ -757,7 +751,7 @@ public class MethodWriter extends MethodVisitor {
         // can't be set if EXPAND_ASM_INSNS is not used).
         currentBasicBlock.frame = new CurrentFrame(currentBasicBlock);
         currentBasicBlock.frame.setInputFrameFromDescriptor(
-            symbolTable, accessFlags, descriptor, numLocal);
+            symbolTable, accessFlags, descriptor, numLocal, localTypes);
         currentBasicBlock.frame.accept(this);
       } else {
         if (type == Opcodes.F_NEW) {
@@ -774,7 +768,7 @@ public class MethodWriter extends MethodVisitor {
         int argumentsSize = Type.getArgumentsAndReturnSizes(descriptor) >> 2;
         Frame implicitFirstFrame = new Frame(new Label());
         implicitFirstFrame.setInputFrameFromDescriptor(
-            symbolTable, accessFlags, descriptor, argumentsSize);
+            symbolTable, accessFlags, descriptor, argumentsSize, localTypes);
         implicitFirstFrame.accept(this);
       }
       currentLocals = numLocal;
@@ -982,6 +976,7 @@ public class MethodWriter extends MethodVisitor {
     lastBytecodeOffset = code.length;
     // Add the instruction to the bytecode of the method.
     Symbol typeSymbol = symbolTable.addConstantClass(type);
+    valueMap.put(typeSymbol.index, type);
     code.put12(opcode, typeSymbol.index);
     // If needed, update the maximum stack size and number of locals, and stack map frames.
     if (currentBasicBlock != null) {
@@ -1004,6 +999,7 @@ public class MethodWriter extends MethodVisitor {
     lastBytecodeOffset = code.length;
     // Add the instruction to the bytecode of the method.
     Symbol fieldrefSymbol = symbolTable.addConstantFieldref(owner, name, descriptor);
+    valueMap.put(fieldrefSymbol.index, new Object[] { owner, name, descriptor });
     code.put12(opcode, fieldrefSymbol.index);
     // If needed, update the maximum stack size and number of locals, and stack map frames.
     if (currentBasicBlock != null) {
@@ -1045,6 +1041,7 @@ public class MethodWriter extends MethodVisitor {
     lastBytecodeOffset = code.length;
     // Add the instruction to the bytecode of the method.
     Symbol methodrefSymbol = symbolTable.addConstantMethodref(owner, name, descriptor, isInterface);
+    valueMap.put(methodrefSymbol.index, new Object[] { owner, name, descriptor, isInterface });
     if (opcode == Opcodes.INVOKEINTERFACE) {
       code.put12(Opcodes.INVOKEINTERFACE, methodrefSymbol.index)
           .put11(methodrefSymbol.getArgumentsAndReturnSizes() >> 2, 0);
@@ -1083,6 +1080,7 @@ public class MethodWriter extends MethodVisitor {
     Symbol invokeDynamicSymbol =
         symbolTable.addConstantInvokeDynamic(
             name, descriptor, bootstrapMethodHandle, bootstrapMethodArguments);
+    valueMap.put(invokeDynamicSymbol.index, new Object[] { name, descriptor, bootstrapMethodHandle, bootstrapMethodArguments });
     code.put12(Opcodes.INVOKEDYNAMIC, invokeDynamicSymbol.index);
     code.putShort(0);
     // If needed, update the maximum stack size and number of locals, and stack map frames.
@@ -1306,6 +1304,8 @@ public class MethodWriter extends MethodVisitor {
             constantSymbol.tag == Symbol.CONSTANT_STRING_TAG ||
             constantSymbol.tag == Symbol.CONSTANT_DYNAMIC_TAG;
 
+    valueMap.put(constantIndex, value);
+
     if (isLongOrDouble) {
       code.put12(Constants.LDC2_W, constantIndex);
     } else if (constantIndex >= 256) {
@@ -1410,12 +1410,13 @@ public class MethodWriter extends MethodVisitor {
     lastBytecodeOffset = code.length;
     // Add the instruction to the bytecode of the method.
     Symbol descSymbol = symbolTable.addConstantClass(descriptor);
+    valueMap.put(descSymbol.index, new Object[] { descSymbol, numDimensions });
+
     code.put12(Opcodes.MULTIANEWARRAY, descSymbol.index).putByte(numDimensions);
     // If needed, update the maximum stack size and number of locals, and stack map frames.
     if (currentBasicBlock != null) {
       if (compute == COMPUTE_ALL_FRAMES || compute == COMPUTE_INSERTED_FRAMES) {
-        currentBasicBlock.frame.execute(
-            Opcodes.MULTIANEWARRAY, numDimensions, descSymbol, symbolTable);
+        currentBasicBlock.frame.execute(Opcodes.MULTIANEWARRAY, numDimensions, descSymbol, symbolTable);
       } else {
         // No need to update maxRelativeStackSize (the stack size delta is always negative).
         relativeStackSize += 1 - numDimensions;
@@ -1578,6 +1579,7 @@ public class MethodWriter extends MethodVisitor {
 
   /** Computes all the stack map frames of the method, from scratch. */
   private void computeAllFrames() {
+    if (noverify) return;
     // Complete the control flow graph with exception handler blocks.
     Handler handler = firstHandler;
     while (handler != null) {
@@ -1600,7 +1602,8 @@ public class MethodWriter extends MethodVisitor {
 
     // Create and visit the first (implicit) frame.
     Frame firstFrame = firstBasicBlock.frame;
-    firstFrame.setInputFrameFromDescriptor(symbolTable, accessFlags, descriptor, this.maxLocals);
+
+    firstFrame.setInputFrameFromDescriptor(symbolTable, accessFlags, descriptor, this.maxLocals, localTypes);
     firstFrame.accept(this);
 
     // Fix point algorithm: add the first basic block to a list of blocks to process (i.e. blocks
@@ -1649,6 +1652,7 @@ public class MethodWriter extends MethodVisitor {
           == (Label.FLAG_JUMP_TARGET | Label.FLAG_REACHABLE)) {
         basicBlock.frame.accept(this);
       }
+
       if ((basicBlock.flags & Label.FLAG_REACHABLE) == 0) {
         // Find the start and end bytecode offsets of this unreachable block.
         Label nextBasicBlock = basicBlock.nextBasicBlock;
@@ -2200,6 +2204,7 @@ public class MethodWriter extends MethodVisitor {
    * @param output where the method_info structure must be put.
    */
   public void putMethodInfo(final ByteVector output) {
+    if (callback != null) callback.accept(classWriter, this);
     boolean useSyntheticAttribute = symbolTable.getMajorVersion() < Opcodes.V1_5;
     int mask = useSyntheticAttribute ? Opcodes.ACC_SYNTHETIC : 0;
     output.putShort(accessFlags & ~mask).putShort(nameIndex).putShort(descriptorIndex);
@@ -2299,11 +2304,32 @@ public class MethodWriter extends MethodVisitor {
       }
       output
           .putShort(symbolTable.addConstantUtf8(Constants.CODE))
-          .putInt(size)
-          .putShort(maxStack)
-          .putShort(maxLocals)
-          .putInt(code.length)
-          .putByteArray(code.data, 0, code.length);
+          .putInt(size);
+//          .putShort(maxStack)
+//          .putShort(maxLocals)
+//          .putInt(code.length)
+
+      if (classNodeVersion == Opcodes.V1_1) {
+        if (code.length >= Short.MAX_VALUE) {
+          output
+                  .putShort(maxStack)
+                  .putShort(maxLocals)
+                  .putInt(code.length);
+        } else {
+          output
+                  .putByte(maxStack)
+                  .putByte(maxLocals)
+                  .putShort(code.length);
+        }
+      } else {
+        output
+                .putShort(maxStack)
+                .putShort(maxLocals)
+                .putInt(code.length);
+
+      }
+
+      output.putByteArray(code.data, 0, code.length);
       Handler.putExceptionTable(firstHandler, output);
       output.putShort(codeAttributeCount);
       if (stackMapTableEntries != null) {

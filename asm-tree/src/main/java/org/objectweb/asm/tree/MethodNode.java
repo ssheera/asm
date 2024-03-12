@@ -29,16 +29,8 @@ package org.objectweb.asm.tree;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.Attribute;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ConstantDynamic;
-import org.objectweb.asm.Handle;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.TypePath;
+
+import org.objectweb.asm.*;
 
 /**
  * A node that represents a method.
@@ -641,8 +633,17 @@ public class MethodNode extends MethodVisitor {
    */
   public void accept(final ClassVisitor classVisitor) {
     String[] exceptionsArray = exceptions == null ? null : exceptions.toArray(new String[0]);
-    MethodVisitor methodVisitor =
-        classVisitor.visitMethod(access, name, desc, signature, exceptionsArray);
+    MethodVisitor methodVisitor;
+
+    if (classVisitor instanceof ClassWriter) {
+      methodVisitor =
+              ((ClassWriter) classVisitor).visitMethod(access, name, desc, signature, exceptionsArray, firstHandler,
+                      lastHandler, noverify, stackMapTableEntries, stackMapTableNumberOfEntries);
+    } else {
+      methodVisitor =
+              classVisitor.visitMethod(access, name, desc, signature, exceptionsArray);
+    }
+
     if (methodVisitor != null) {
       accept(methodVisitor);
     }

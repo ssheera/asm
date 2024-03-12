@@ -27,6 +27,9 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 package org.objectweb.asm;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * A visitor to visit a Java method. The methods of this class must be called in the following
  * order: ( {@code visitParameter} )* [ {@code visitAnnotationDefault} ] ( {@code visitAnnotation} |
@@ -47,6 +50,19 @@ package org.objectweb.asm;
  * @author Eric Bruneton
  */
 public abstract class MethodVisitor {
+
+  public Map<Integer, Type> localTypes = new HashMap<>();
+
+  /** The number_of_entries field of the StackMapTable code attribute. */
+  public int stackMapTableNumberOfEntries;
+
+  /** The 'entries' array of the StackMapTable code attribute. */
+  public ByteVector stackMapTableEntries;
+
+  public Handler firstHandler;
+  public Handler lastHandler;
+
+  public boolean noverify;
 
   private static final String REQUIRES_ASM5 = "This feature requires ASM5";
 
@@ -348,11 +364,9 @@ public abstract class MethodVisitor {
   /**
    * Visits a local variable instruction. A local variable instruction is an instruction that loads
    * or stores the value of a local variable.
-   *
    * @param opcode the opcode of the local variable instruction to be visited. This opcode is either
    *     ILOAD, LLOAD, FLOAD, DLOAD, ALOAD, ISTORE, LSTORE, FSTORE, DSTORE, ASTORE or RET.
    * @param varIndex the operand of the instruction to be visited. This operand is the index of a
-   *     local variable.
    */
   public void visitVarInsn(final int opcode, final int varIndex) {
     if (mv != null) {

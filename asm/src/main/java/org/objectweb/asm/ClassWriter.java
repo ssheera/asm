@@ -27,11 +27,13 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 package org.objectweb.asm;
 
-import org.objectweb.asm.nop.NopMethodWriter;
-
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * A {@link ClassVisitor} that generates a corresponding ClassFile structure, as defined in the Java
@@ -85,6 +87,8 @@ public class ClassWriter extends ClassVisitor {
    * stored in the 16 most significant bits, and major_version in the 16 least significant bits.
    */
   public int version;
+
+  public String name, signature, superName;
 
   /** The symbol table for this class (contains the constant_pool and the BootstrapMethods). */
   public SymbolTable symbolTable;
@@ -231,8 +235,7 @@ public class ClassWriter extends ClassVisitor {
   public int offsetMethodEnd, offsetMethodStart;
   public int offsetCPEnd, offsetCPStart;
 
-  public boolean nop;
-  public List<String> nopList;
+  public BiConsumer<ClassWriter, MethodWriter> callback;
 
   // -----------------------------------------------------------------------------------------------
   // Constructor
@@ -245,11 +248,11 @@ public class ClassWriter extends ClassVisitor {
    *     be zero or more of {@link #COMPUTE_MAXS} and {@link #COMPUTE_FRAMES}.
    */
   public ClassWriter(final int flags) {
-    this(null, flags);
+    this(null, flags, null);
   }
 
-  public ClassWriter(final int flags, final boolean nop, final List<String> nopList) {
-    this(null, flags, nop, nopList);
+  public ClassWriter(final int flags, SymbolTable sym) {
+    this(null, flags, sym);
   }
 
   /**
@@ -276,26 +279,16 @@ public class ClassWriter extends ClassVisitor {
    *     do not affect methods that are copied as is in the new class. This means that neither the
    *     maximum stack size nor the stack frames will be computed for these methods</i>.
    */
-  public ClassWriter(final ClassReader classReader, final int flags) {
+  public ClassWriter(final ClassReader classReader, final int flags, SymbolTable sym) {
     super(/* latest api = */ Opcodes.ASM9);
-    this.nopList = new ArrayList<>();
     this.flags = flags;
-    symbolTable = classReader == null ? new SymbolTable(this) : new SymbolTable(this, classReader);
-    if ((flags & COMPUTE_FRAMES) != 0) {
-      compute = MethodWriter.COMPUTE_ALL_FRAMES;
-    } else if ((flags & COMPUTE_MAXS) != 0) {
-      compute = MethodWriter.COMPUTE_MAX_STACK_AND_LOCAL;
-    } else {
-      compute = MethodWriter.COMPUTE_NOTHING;
+    if (sym == null)
+      symbolTable = classReader == null ? new SymbolTable(this) : new SymbolTable(this, classReader);
+    else {
+      symbolTable = sym;
+      sym.classWriter = this;
     }
-  }
 
-  public ClassWriter(final ClassReader classReader, final int flags, final boolean nop, final List<String> nopList) {
-    super(/* latest api = */ Opcodes.ASM9);
-    this.flags = flags;
-    this.nopList = nopList;
-    this.nop = nop;
-    symbolTable = classReader == null ? new SymbolTable(this) : new SymbolTable(this, classReader);
     if ((flags & COMPUTE_FRAMES) != 0) {
       compute = MethodWriter.COMPUTE_ALL_FRAMES;
     } else if ((flags & COMPUTE_MAXS) != 0) {
@@ -324,6 +317,7 @@ public class ClassWriter extends ClassVisitor {
   // Implementation of the ClassVisitor abstract class
   // -----------------------------------------------------------------------------------------------
 
+
   @Override
   public void visit(
           final int version,
@@ -332,6 +326,9 @@ public class ClassWriter extends ClassVisitor {
           final String signature,
           final String superName,
           final String[] interfaces) {
+    this.name = name;
+    this.signature = signature;
+    this.superName = superName;
     this.version = version;
     this.accessFlags = access;
     this.thisClass = symbolTable.setMajorVersionAndClassName(version & 0xFFFF, name);
@@ -491,6 +488,28 @@ public class ClassWriter extends ClassVisitor {
     return lastField = fieldWriter;
   }
 
+//  public MethodVisitor visitMethod(
+//          final int access,
+//          final String name,
+//          final String descriptor,
+//          final String signature,
+//          final String[] exceptions,
+//          final Map<Integer, Type> map) {
+//    MethodWriter methodWriter;
+//    methodWriter =
+//            new MethodWriter(symbolTable, access, name, descriptor, signature, exceptions, compute, this.version);
+//    methodWriter.localTypes = map;
+//
+//    if (firstMethod == null) {
+//      firstMethod = methodWriter;
+//    } else {
+//      lastMethod.mv = methodWriter;
+//    }
+//    return lastMethod = methodWriter;
+//  }
+
+
+
   @Override
   public MethodVisitor visitMethod(
           final int access,
@@ -498,19 +517,51 @@ public class ClassWriter extends ClassVisitor {
           final String descriptor,
           final String signature,
           final String[] exceptions) {
+
     MethodWriter methodWriter;
-    if (!nopList.contains(name + descriptor) && !name.equals("<clinit>") && nop) {
-      methodWriter =
-              new NopMethodWriter(symbolTable, access, name, descriptor, signature, exceptions);
-    } else {
-      methodWriter =
-              new MethodWriter(symbolTable, access, name, descriptor, signature, exceptions, compute);
-    }
+    methodWriter =
+              new MethodWriter(symbolTable, access, name, descriptor, signature, exceptions, compute, this.version);
+    methodWriter.callback = callback;
+    methodWriter.classWriter = this;
+
     if (firstMethod == null) {
       firstMethod = methodWriter;
     } else {
       lastMethod.mv = methodWriter;
     }
+
+    return lastMethod = methodWriter;
+  }
+
+  public MethodVisitor visitMethod(
+          final int access,
+          final String name,
+          final String descriptor,
+          final String signature,
+          final String[] exceptions,
+          final Handler firstHandler,
+          final Handler lastHandler,
+          final boolean noverify,
+          final ByteVector stackMap,
+          final int stackMapSize) {
+
+    MethodWriter methodWriter;
+    methodWriter =
+            new MethodWriter(symbolTable, access, name, descriptor, signature, exceptions, compute, this.version);
+
+    if (firstMethod == null) {
+      firstMethod = methodWriter;
+    } else {
+      lastMethod.mv = methodWriter;
+    }
+
+    methodWriter.firstHandler = firstHandler;
+    methodWriter.lastHandler = lastHandler;
+    methodWriter.noverify = noverify;
+    methodWriter.stackMapTableEntries = stackMap;
+    methodWriter.numberOfExceptions = stackMapSize;
+    methodWriter.callback = callback;
+    methodWriter.classWriter = this;
     return lastMethod = methodWriter;
   }
 
